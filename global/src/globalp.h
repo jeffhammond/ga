@@ -5,23 +5,14 @@
 
 #include "gaconfig.h"
 
-#ifdef __crayx1
-#undef CRAY
-#endif
-
 #ifdef FALSE
 #undef FALSE
 #endif
 #ifdef TRUE
 #undef TRUE
 #endif
-#ifdef CRAY_YMP
-#define FALSE _btol(0)
-#define TRUE  _btol(1)
-#else
 #define FALSE (logical) 0
 #define TRUE  (logical) 1
-#endif
 
 #if HAVE_WINDOWS_H
 #   include <windows.h>
@@ -56,7 +47,7 @@
 
 
 #ifdef ENABLE_TRACE
-  static Integer     op_code;
+  static Integer     op_code; /* RACE */
 #endif
 
 
@@ -69,7 +60,7 @@ typedef struct ga_typeinfo_t {
   size_t size;
 } ga_typeinfo_t;
 
-extern ga_typeinfo_t ga_types[];
+extern ga_typeinfo_t ga_types[]; /* RACE */
 
 #define GA_TYPES_MAX 256
 #define GA_TYPES_RESERVED 17 /**Should match num lines initialized in ga_types struct*/
@@ -117,18 +108,23 @@ struct ga_bytes_t{
 
 #define STAT_AR_SZ sizeof(ga_stat_t)/sizeof(long)
 
-extern long *GAstat_arr;  
-extern struct ga_stat_t GAstat;
-extern struct ga_bytes_t GAbytes;
-extern char *GA_name_stack[NAME_STACK_LEN];    /* stack for names of GA ops */ 
-extern int GA_stack_size;
-extern int _ga_sync_begin;
-extern int _ga_sync_end;
-extern int *_ga_argc;
-extern char ***_ga_argv;
+extern long *GAstat_arr;   /* RACE */
+extern struct ga_stat_t GAstat; /* RACE */
+extern struct ga_bytes_t GAbytes; /* RACE */
+extern char *GA_name_stack[NAME_STACK_LEN]; /* RACE */    /* stack for names of GA ops */ 
+extern int GA_stack_size; /* RACE */
+extern int _ga_sync_begin; /* RACE */
+extern int _ga_sync_end; /* RACE */
+extern int *_ga_argc; /* RACE */
+extern char ***_ga_argv; /* RACE */
 
+#ifndef DISABLE_THREAD_UNSAFE_PROFILING
 #define  GA_PUSH_NAME(name) (GA_name_stack[GA_stack_size++] = (name)) 
 #define  GA_POP_NAME        (GA_stack_size--)
+#else
+#define  GA_PUSH_NAME(name)
+#define  GA_POP_NAME
+#endif
 
 /* periodic operations */
 #define PERIODIC_GET 1

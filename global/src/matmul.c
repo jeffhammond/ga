@@ -26,13 +26,12 @@
 #define KCHUNK_OPTIMIZATION 0 /* This Opt performing well only for m=1000;n=1000'k=2000 kinda cases and not for the opposite*/
 
 /* Optimization flags: Initialized everytime in pnga_matmul() */
-static short int CYCLIC_DISTR_OPT_FLAG  = SET;
-static short int CONTIG_CHUNKS_OPT_FLAG = SET;
-static short int DIRECT_ACCESS_OPT_FLAG = SET;
+static short int CYCLIC_DISTR_OPT_FLAG  = SET; /* RACE */
+static short int CONTIG_CHUNKS_OPT_FLAG = SET; /* RACE */
+static short int DIRECT_ACCESS_OPT_FLAG = SET; /* RACE */
 
-Integer gNbhdlA[2], gNbhdlB[2], gNbhdlC[2];/* for A and B matrix */
+static int _gai_matmul_patch_flag = 0; /* RACE */
 
-static int _gai_matmul_patch_flag = 0;
 void gai_matmul_patch_flag(int flag)
 {
     _gai_matmul_patch_flag = flag;
@@ -80,8 +79,7 @@ static void GET_BLOCK(Integer g_x, task_list_t *chunk, void *buf,
     pnga_nbget(g_x, lo, hi, buf, dim_next, nbhdl);
 }
 
-static short int
-gai_get_task_list(task_list_t *taskListA, task_list_t *taskListB, 
+static short int gai_get_task_list(task_list_t *taskListA, task_list_t *taskListB, 
 		  task_list_t *state, Integer istart, Integer jstart,
 		  Integer kstart, Integer iend, Integer jend, Integer kend, 
 		  Integer Ichunk, Integer Jchunk, Integer Kchunk, 
@@ -268,8 +266,7 @@ static void gai_get_chunk_size(int irregular,Integer *Ichunk,Integer *Jchunk,
     *elems += nbuf*NUM_MATS*sizeof(DoubleComplex)/GAsizeofM(atype);
 }
 
-static DoubleComplex* 
-gai_get_armci_memory(Integer Ichunk, Integer Jchunk, Integer Kchunk,
+static DoubleComplex* gai_get_armci_memory(Integer Ichunk, Integer Jchunk, Integer Kchunk,
 		     short int nbuf, Integer atype) {
 
     DoubleComplex *tmp = NULL;
@@ -486,8 +483,7 @@ static void gai_matmul_shmem(transa, transb, alpha, beta, atype,
 }
 
 
-static
-void init_block_info(Integer g_c, Integer *proc_index, Integer *index,
+static void init_block_info(Integer g_c, Integer *proc_index, Integer *index,
                      Integer *blocks, Integer *block_dims, Integer *topology,
                      Integer *iblock) 
 {
@@ -513,8 +509,7 @@ void init_block_info(Integer g_c, Integer *proc_index, Integer *index,
  *   return 0 indicates no more blocks available
  *   return 1 indicates there is a block available
  */
-static
-int get_next_block_info(Integer g_c, Integer *proc_index, Integer *index,
+static int get_next_block_info(Integer g_c, Integer *proc_index, Integer *index,
                         Integer *blocks, Integer *block_dims, Integer*topology,
                         Integer *iblock, Integer *blo, Integer *bhi) 
 {
@@ -600,6 +595,8 @@ static void gai_matmul_regular(transa, transb, alpha, beta, atype,
   Integer ctype, cndim, cdims[2];
   Integer iblock=0, proc_index[2], index[2];
   Integer blocks[2], block_dims[2], topology[2];
+
+  Integer gNbhdlA[2], gNbhdlB[2], gNbhdlC[2];
 
   GA_PUSH_NAME("ga_matmul_regular");
   if(irregular) pnga_error("irregular flag set", 0L);
@@ -845,6 +842,8 @@ static void gai_matmul_irreg(transa, transb, alpha, beta, atype,
   SingleComplex ONE_CF; 
   Integer grp_me, a_grp = pnga_get_pgroup(g_a);
   Integer clo[2], chi[2];
+
+  Integer gNbhdlA[2], gNbhdlB[2], gNbhdlC[2];
 
   GA_PUSH_NAME("ga_matmul_irreg");
   init_task_list(&taskListC);
@@ -1387,10 +1386,11 @@ void pnga_matmul(transa, transb, alpha, beta,
 #endif
 
     /* switch to various matmul algorithms here. more to come */
-    if( GA[GA_OFFSET + g_c].irreg == 1 ||
-	GA[GA_OFFSET + g_b].irreg == 1 ||
-	GA[GA_OFFSET + g_a].irreg == 1 ||
-	_gai_matmul_patch_flag == SET) irregular = SET;
+    if( _gai_matmul_patch_flag == SET  || GA[GA_OFFSET + g_c].irreg == 1 || 
+        GA[GA_OFFSET + g_b].irreg == 1 || GA[GA_OFFSET + g_a].irreg == 1 ) 
+    {
+        irregular = SET;
+    }
 
     /* even ga_dgemm is called, m,n & k might not match GA dimensions */
     pnga_inquire(g_c, &ctype, &rank, dims);
@@ -1403,9 +1403,6 @@ void pnga_matmul(transa, transb, alpha, beta,
 	  CONTIG_CHUNKS_OPT_FLAG = UNSET;
 	  DIRECT_ACCESS_OPT_FLAG = UNSET;
        }
-#    if defined(__crayx1) || defined(NEC)
-       use_NB_matmul = UNSET;
-#    endif
     }
 
     /* if block cyclic, then use regular algorithm. This is turned on for now

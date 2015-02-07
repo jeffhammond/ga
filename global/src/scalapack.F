@@ -6,7 +6,7 @@
 #else
 #define INTGR4 integer*4
 #endif
-#define HAVE_ELPA 1
+C Jeff #define HAVE_ELPA 1
 C     $Id: scalapack.F,v 1.11 2006/10/13 16:15:17 d3g293 Exp $
 ****************************************************************************
 * GA to/from ScaLAPACK (square block scattered decomposition) interface    * 

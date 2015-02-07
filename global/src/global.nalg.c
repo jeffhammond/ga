@@ -27,11 +27,6 @@
 extern ARMCI_Group* ga_get_armci_group_(int);
 #endif
 
-/* work arrays used in all routines */
-static Integer dims[MAXDIM], ld[MAXDIM-1];
-static Integer lo[MAXDIM],hi[MAXDIM];
-static Integer one_arr[MAXDIM]={1,1,1,1,1,1,1};
-
 #define GET_ELEMS(ndim,lo,hi,ld,pelems){\
 int _i;\
       for(_i=0, *pelems = hi[ndim-1]-lo[ndim-1]+1; _i< ndim-1;_i++) {\
@@ -60,6 +55,9 @@ void pnga_zero(Integer g_a)
   void *ptr;
   /*register Integer i;*/
   int local_sync_begin,local_sync_end;
+
+  /* these used to be static globals... */
+  Integer dims[MAXDIM], ld[MAXDIM-1], lo[MAXDIM], hi[MAXDIM];
 
   local_sync_begin = _ga_sync_begin; local_sync_end = _ga_sync_end;
   _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous masking*/
@@ -169,71 +167,6 @@ void pnga_zero(Integer g_a)
 
 
 
-#if 0
-/*\ COPY ONE GLOBAL ARRAY INTO ANOTHER
-\*/
-static void snga_copy_old(Integer g_a, Integer g_b)
-{
-Integer  ndim, ndimb, type, typeb, me, elems=0, elemsb=0;
-Integer dimsb[MAXDIM];
-void *ptr_a, *ptr_b;
-
-   me = pnga_nodeid();
-
-   GA_PUSH_NAME("ga_copy");
-
-   if(g_a == g_b) pnga_error("arrays have to be different ", 0L);
-
-   pnga_inquire(g_a,  &type, &ndim, dims);
-   pnga_inquire(g_b,  &typeb, &ndimb, dimsb);
-
-   if(type != typeb) pnga_error("types not the same", g_b);
-
-   if(!pnga_compare_distr(g_a,g_b))
-
-      pnga_copy_patch("n",g_a, one_arr, dims, g_b, one_arr, dimsb);
-
-   else {
-
-     pnga_sync();
-
-     pnga_distribution(g_a, me, lo, hi);
-     if(lo[0]>0){
-        pnga_access_ptr(g_a, lo, hi, &ptr_a, ld);
-        if (pnga_has_ghosts(g_a)) {
-          GET_ELEMS_W_GHOSTS(ndim,lo,hi,ld,&elems);
-        } else {
-          GET_ELEMS(ndim,lo,hi,ld,&elems);
-        }
-     }
-
-     pnga_distribution(g_b, me, lo, hi);
-     if(lo[0]>0){
-        pnga_access_ptr(g_b, lo, hi, &ptr_b, ld);
-        if (pnga_has_ghosts(g_b)) {
-          GET_ELEMS_W_GHOSTS(ndim,lo,hi,ld,&elems);
-        } else {
-          GET_ELEMS(ndim,lo,hi,ld,&elems);
-        }
-     }
-  
-     if(elems!= elemsb)pnga_error("inconsistent number of elements",elems-elemsb);
-
-     if(elems>0){
-        ARMCI_Copy(ptr_a, ptr_b, (int)elems*GAsizeofM(type));
-        pnga_release(g_a,lo,hi);
-        pnga_release(g_b,lo,hi);
-     }
-
-     pnga_sync();
-   }
-
-   GA_POP_NAME;
-}
-#endif
-
-
-
 /*\ COPY ONE GLOBAL ARRAY INTO ANOTHER
 \*/
 #if HAVE_SYS_WEAK_ALIAS_PRAGMA
@@ -248,6 +181,9 @@ Integer num_blocks_a, num_blocks_b;
 Integer blocks[MAXDIM], block_dims[MAXDIM];
 void *ptr_a, *ptr_b;
 int local_sync_begin,local_sync_end,use_put;
+
+  /* these used to be static globals... */
+  Integer dims[MAXDIM], ld[MAXDIM-1], lo[MAXDIM], hi[MAXDIM];
 
    GA_PUSH_NAME("ga_copy");
 
@@ -451,6 +387,11 @@ Integer num_blocks_a=0, num_blocks_b=0;
 Integer andim, adims[MAXDIM];
 Integer bndim, bdims[MAXDIM];
 
+Integer one_arr[MAXDIM]={1,1,1,1,1,1,1};
+
+  /* these used to be static globals... */
+  Integer dims[MAXDIM], ld[MAXDIM-1], lo[MAXDIM], hi[MAXDIM];
+
    _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous masking*/
 
    GA_PUSH_NAME("ga_dot");
@@ -645,6 +586,9 @@ void pnga_scale(Integer g_a, void* alpha)
   void *ptr;
   int local_sync_begin,local_sync_end;
 
+  /* these used to be static globals... */
+  Integer dims[MAXDIM], ld[MAXDIM-1], lo[MAXDIM], hi[MAXDIM];
+
   local_sync_begin = _ga_sync_begin; local_sync_end = _ga_sync_end;
   _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous masking*/
   grp_id = pnga_get_pgroup(g_a);
@@ -793,6 +737,11 @@ int local_sync_begin,local_sync_end;
  Integer andim, adims[MAXDIM];
  Integer bndim, bdims[MAXDIM];
  Integer cndim, cdims[MAXDIM];
+
+ Integer one_arr[MAXDIM]={1,1,1,1,1,1,1};
+
+  /* these used to be static globals... */
+  Integer dims[MAXDIM], ld[MAXDIM-1], lo[MAXDIM], hi[MAXDIM];
  
    local_sync_begin = _ga_sync_begin; local_sync_end = _ga_sync_end;
    _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous masking*/
@@ -949,38 +898,36 @@ int local_sync_begin,local_sync_end;
 }
 
 
-static 
-void snga_local_transpose(Integer type, char *ptra, Integer n, Integer stride, char *ptrb)
+static void snga_local_transpose(Integer type, char *ptra, Integer n, Integer stride, char *ptrb)
 {
-int i;
     switch(type){
 
        case C_INT:
-            for(i = 0; i< n; i++, ptrb+= stride) 
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(int*)ptrb= ((int*)ptra)[i];
             break;
        case C_DCPL:
-            for(i = 0; i< n; i++, ptrb+= stride) 
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(DoubleComplex*)ptrb= ((DoubleComplex*)ptra)[i];
             break;
        case C_SCPL:
-            for(i = 0; i< n; i++, ptrb+= stride) 
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(SingleComplex*)ptrb= ((SingleComplex*)ptra)[i];
             break;
        case C_DBL:
-            for(i = 0; i< n; i++, ptrb+= stride) 
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(double*)ptrb= ((double*)ptra)[i];
             break;
        case C_FLOAT:
-            for(i = 0; i< n; i++, ptrb+= stride)
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(float*)ptrb= ((float*)ptra)[i];
             break;      
        case C_LONG:
-            for(i = 0; i< n; i++, ptrb+= stride)
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(long*)ptrb= ((long*)ptra)[i];
             break;                                 
        case C_LONGLONG:
-            for(i = 0; i< n; i++, ptrb+= stride)
+            for(Integer i = 0; i< n; i++, ptrb+= stride)
                *(long long*)ptrb= ((long long*)ptra)[i];
             break;                                 
        default: pnga_error("bad type:",type);
@@ -996,7 +943,7 @@ void pnga_transpose(Integer g_a, Integer g_b)
 Integer me = pnga_nodeid();
 Integer nproc = pnga_nnodes(); 
 Integer atype, btype, andim, adims[MAXDIM], bndim, bdims[MAXDIM];
-Integer lo[2],hi[2];
+Integer lo[2],hi[2],ld[1];
 int local_sync_begin,local_sync_end;
 Integer num_blocks_a;
 char *ptr_tmp, *ptr_a;

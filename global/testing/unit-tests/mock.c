@@ -10,7 +10,6 @@
 #include "mock.h"
 #include "abstract_ops.h"
 
-
 void Mock_Abs_value(mock_ga_t *g_a)
 {
   ITER_DECLARE_VARS(g_a)
@@ -478,9 +477,11 @@ void Mock_Elem_divide_patch(mock_ga_t *g_a, int *alo, int *ahi, mock_ga_t *g_b, 
 
 }
 
-
 void Mock_Elem_maximum(mock_ga_t *g_a, mock_ga_t *g_b, mock_ga_t *g_c)
 {
+#if 0
+/* this function is not thread-safe for complex case */
+
   ITER_DECLARE_VARS(g_a)
     ITER_DECLARE_VARS(g_b)
     ITER_DECLARE_VARS(g_c)
@@ -506,7 +507,7 @@ void Mock_Elem_maximum(mock_ga_t *g_a, mock_ga_t *g_b, mock_ga_t *g_c)
 #include "types.xh"
 #undef TYPE_CASE
     }
-
+#endif
 }
 
 
@@ -515,9 +516,11 @@ void Mock_Elem_maximum_patch(mock_ga_t *g_a, int *alo, int *ahi, mock_ga_t *g_b,
 
 }
 
-
 void Mock_Elem_minimum(mock_ga_t *g_a, mock_ga_t *g_b, mock_ga_t *g_c)
 {
+/* this function is not thread-safe for complex case */
+#if 0
+
   ITER_DECLARE_VARS(g_a)
     ITER_DECLARE_VARS(g_b)
     ITER_DECLARE_VARS(g_c)
@@ -543,9 +546,8 @@ void Mock_Elem_minimum(mock_ga_t *g_a, mock_ga_t *g_b, mock_ga_t *g_c)
 #include "types.xh"
 #undef TYPE_CASE
     }
-
+#endif
 }
-
 
 void Mock_Elem_minimum_patch(mock_ga_t *g_a, int *alo, int *ahi, mock_ga_t *g_b, int *blo, int *bhi,mock_ga_t *g_c, int *clo, int *chi)
 {

@@ -3,28 +3,20 @@
 #include "gaconfig.h"
 #include "typesf2c.h"
 
-extern int _max_global_array;
-extern Integer *_ga_map;
-extern Integer GAme, GAnproc;
-extern Integer *GA_proclist;
-extern int GA_Default_Proc_Group;
-extern int* GA_Proc_list;
-extern int* GA_inv_Proc_list;
-extern int** GA_Update_Flags;
-extern int* GA_Update_Signal;
-extern short int _ga_irreg_flag; 
-extern Integer GA_Debug_flag;
-extern int *ProcListPerm;            /*permuted list of processes */
+extern int _max_global_array; /* RACE */
+extern Integer GAme, GAnproc; /* RACE */
+extern Integer *GA_proclist; /* RACE */
+extern int GA_Default_Proc_Group; /* RACE */
+extern int* GA_Proc_list; /* RACE */
+extern int* GA_inv_Proc_list; /* RACE */
+extern int** GA_Update_Flags; /* RACE */
+extern int* GA_Update_Signal; /* RACE */
+extern short int _ga_irreg_flag;  /* RACE */
+extern Integer GA_Debug_flag; /* RACE */
+extern int *ProcListPerm; /* RACE */            /*permuted list of processes */
 
 #define FNAM        31              /* length of array names   */
 #define CACHE_SIZE  512             /* size of the cache inside GA DS*/
-
-#ifdef __crayx1
-#define __CRAYX1_PRAGMA _Pragma
-#else
-#define __CRAYX1_PRAGMA(_pragf)
-#endif
-
 
 typedef int ARMCI_Datatype;
 typedef struct {
@@ -84,10 +76,11 @@ typedef struct {
 #ifdef ENABLE_CHECKPOINT
        int record_id;               /* record id for writing ga to disk     */
 #endif
+       /* TODO add a mutex here for locking */
 } global_array_t;
 
-extern global_array_t *_ga_main_data_structure; 
-extern proc_list_t *_proc_list_main_data_structure; 
+extern global_array_t *_ga_main_data_structure;  /* RACE */
+extern proc_list_t *_proc_list_main_data_structure;  /* RACE */
 /*\
  *The following statement had to be moved here because of a problem in the c
  *compiler on SV1. The problem is that when a c file is compiled with a 
@@ -98,8 +91,8 @@ extern proc_list_t *_proc_list_main_data_structure;
  *So to handle that,we cannot initialize global variables to be able to run 
  *on SV1.
 \*/
-extern global_array_t *GA;
-extern proc_list_t *PGRP_LIST;
+extern global_array_t *GA; /* RACE */
+extern proc_list_t *PGRP_LIST; /* RACE */
 
 
 #define ERR_STR_LEN 256               /* length of string for error reporting */
@@ -127,7 +120,6 @@ extern proc_list_t *PGRP_LIST;
    Integer _loc, _nb, _d, _index, _dim=ndim,_dimstart=0, _dimpos;              \
    for(_nb=1, _d=0; _d<_dim; _d++)_nb *= (Integer)nblock[_d];                  \
    if((Integer)proc > _nb - 1 || proc<0){                                      \
-      __CRAYX1_PRAGMA("_CRI novector");                                        \
            for(_d=0; _d<_dim; _d++){                                           \
          lo[_d] = (Integer)0;                                                  \
          hi[_d] = (Integer)-1;}                                                \
@@ -135,7 +127,6 @@ extern proc_list_t *PGRP_LIST;
    else{                                                                       \
          _index = proc;                                                        \
          if(GA_inv_Proc_list) _index = GA_inv_Proc_list[proc];                 \
-      __CRAYX1_PRAGMA("_CRI novector");                                        \
          for(_d=0; _d<_dim; _d++){                                             \
              _loc = _index% (Integer)nblock[_d];                               \
              _index  /= (Integer)nblock[_d];                                   \
@@ -150,11 +141,10 @@ extern proc_list_t *PGRP_LIST;
 
 /* this macro finds the block indices for a given block */
 #define gam_find_block_indices(ga_handle,nblock,index) {                       \
-  int _itmp, _i;                                                       \
   int _ndim = GA[ga_handle].ndim;                                              \
-  _itmp = nblock;                                                              \
+  int _itmp = nblock;                                                          \
   index[0] = _itmp%GA[ga_handle].num_blocks[0];                                \
-  for (_i=1; _i<_ndim; _i++) {                                                 \
+  for (int _i=1; _i<_ndim; _i++) {                                             \
     _itmp = (_itmp-index[_i-1])/GA[ga_handle].num_blocks[_i-1];                \
     index[_i] = _itmp%GA[ga_handle].num_blocks[_i];                            \
   }                                                                            \
@@ -163,22 +153,20 @@ extern proc_list_t *PGRP_LIST;
 /* this macro finds the ScaLAPACK indices for a given processor */
 #ifdef COMPACT_SCALAPACK
 #define gam_find_proc_indices(ga_handle,proc,index) {                          \
-  Integer _itmp, _i;                                                           \
   Integer _ndim = GA[ga_handle].ndim;                                          \
-  _itmp = proc;                                                                \
+  int _itmp = proc;                                                            \
   index[0] = _itmp%GA[ga_handle].nblock[0];                                    \
-  for (_i=1; _i<_ndim; _i++) {                                                 \
+  for (int _i=1; _i<_ndim; _i++) {                                             \
     _itmp = (_itmp-index[_i-1])/GA[ga_handle].nblock[_i-1];                    \
     index[_i] = _itmp%GA[ga_handle].nblock[_i];                                \
   }                                                                            \
 }
 #else
 #define gam_find_proc_indices(ga_handle,proc,index) {                          \
-  Integer _itmp, _i;                                                           \
   Integer _ndim = GA[ga_handle].ndim;                                          \
-  _itmp = proc;                                                                \
+  int _itmp = proc;                                                            \
   index[_ndim-1] = _itmp%GA[ga_handle].nblock[_ndim-1];                        \
-  for (_i=_ndim-2; _i>=0; _i--) {                                              \
+  for (int _i=_ndim-2; _i>=0; _i--) {                                          \
     _itmp = (_itmp-index[_i+1])/GA[ga_handle].nblock[_i+1];                    \
     index[_i] = _itmp%GA[ga_handle].nblock[_i];                                \
   }                                                                            \
@@ -266,7 +254,6 @@ extern proc_list_t *PGRP_LIST;
 #define gam_setstride(ndim, size, ld, ldrem, stride_rem, stride_loc){\
   int _i;                                                            \
   stride_rem[0]= stride_loc[0] = (int)size;                          \
-  __CRAYX1_PRAGMA("_CRI novector");                                  \
   for(_i=0;_i<ndim-1;_i++){                                          \
     stride_rem[_i] *= (int)ldrem[_i];                                \
     stride_loc[_i] *= (int)ld[_i];                                   \
@@ -279,14 +266,12 @@ extern proc_list_t *PGRP_LIST;
       lo, and hi */
 #define gam_CountElems(ndim, lo, hi, pelems){                        \
   int _d;                                                            \
-  __CRAYX1_PRAGMA("_CRI novector");                                         \
   for(_d=0,*pelems=1; _d< ndim;_d++)  *pelems *= hi[_d]-lo[_d]+1;    \
 }
 
 /* NEEDS C_INT64 CONVERSION */
 #define gam_ComputeCount(ndim, lo, hi, count){                       \
   int _d;                                                            \
-  __CRAYX1_PRAGMA("_CRI novector");                                         \
   for(_d=0; _d< ndim;_d++) count[_d] = (int)(hi[_d]-lo[_d])+1;       \
 }
 
@@ -301,7 +286,6 @@ extern proc_list_t *PGRP_LIST;
   _l = strlen(err_string);                                           \
   sprintf(err_string+_l, " [%ld:%ld ",(long)lo[_d],(long)hi[_d]);    \
   _l=strlen(err_string);                                             \
-  __CRAYX1_PRAGMA("_CRI novector");                                  \
   for(_d=1; _d< ndim; _d++){                                         \
     sprintf(err_string+_l, ",%ld:%ld ",(long)lo[_d],(long)hi[_d]);   \
     _l=strlen(err_string);                                           \
@@ -323,7 +307,6 @@ Integer _lo[MAXDIM], _hi[MAXDIM], _p_handle, _iproc;                          \
       _p_handle = GA[g_handle].p_handle;                                      \
       _iproc = proc;                                                          \
       gaCheckSubscriptM(subscript, _lo, _hi, GA[g_handle].ndim);              \
-  __CRAYX1_PRAGMA("_CRI novector");                                           \
       for(_d=0; _d < _last; _d++)            {                                \
           _w = (Integer)GA[g_handle].width[_d];                               \
           _offset += (subscript[_d]-_lo[_d]+_w) * _factor;                    \
@@ -356,7 +339,6 @@ Integer _lo[MAXDIM], _hi[MAXDIM], _p_handle, _iproc;                          \
 #define gaCheckSubscriptM(subscr, lo, hi, ndim)                                \
 {                                                                              \
 Integer _d;                                                                    \
-  __CRAYX1_PRAGMA("_CRI novector");                                            \
    for(_d=0; _d<  ndim; _d++)                                                  \
       if( subscr[_d]<  lo[_d] ||  subscr[_d]>  hi[_d]){                        \
         char err_string[ERR_STR_LEN];                                          \

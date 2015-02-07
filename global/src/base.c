@@ -98,33 +98,33 @@ static int calc_maplen(int handle);
                     Integer blk[], Integer pedims[]);
 #endif
 
-global_array_t *_ga_main_data_structure;
-global_array_t *GA;
-proc_list_t *_proc_list_main_data_structure;
-proc_list_t *PGRP_LIST;
-static int GAinitialized = 0;
-static int ARMCIinitialized = 0;
-int _ga_sync_begin = 1;
-int _ga_sync_end = 1;
-int _max_global_array = MAX_ARRAYS;
-Integer *GA_proclist;
-int* GA_Proc_list = NULL;
-int* GA_inv_Proc_list=NULL;
-int GA_World_Proc_Group = -1;
-int GA_Default_Proc_Group = -1;
-int ga_armci_world_group=0;
-int GA_Init_Proc_Group = -2;
-Integer GA_Debug_flag = 0;
-int *ProcPermList = NULL;
+global_array_t *_ga_main_data_structure; /* RACE */
+global_array_t *GA; /* RACE */
+proc_list_t *_proc_list_main_data_structure; /* RACE */
+proc_list_t *PGRP_LIST; /* RACE */
+static int GAinitialized = 0; /* RACE */
+static int ARMCIinitialized = 0; /* RACE */
+int _ga_sync_begin = 1; /* RACE */
+int _ga_sync_end = 1; /* RACE */
+int _max_global_array = MAX_ARRAYS; /* RACE */
+Integer *GA_proclist; /* RACE */
+int* GA_Proc_list = NULL; /* RACE */
+int* GA_inv_Proc_list=NULL; /* RACE */
+int GA_World_Proc_Group = -1; /* RACE */
+int GA_Default_Proc_Group = -1; /* RACE */
+int ga_armci_world_group=0; /* RACE */
+int GA_Init_Proc_Group = -2; /* RACE */
+Integer GA_Debug_flag = 0; /* RACE */
+int *ProcPermList = NULL; /* RACE */
 
 /* MA addressing */
-DoubleComplex   *DCPL_MB;           /* double precision complex base address */
-SingleComplex   *SCPL_MB;           /* single precision complex base address */
-DoublePrecision *DBL_MB;            /* double precision base address */
-Integer         *INT_MB;            /* integer base address */
-float           *FLT_MB;            /* float base address */
-int** GA_Update_Flags;
-int* GA_Update_Signal;
+DoubleComplex   *DCPL_MB; /* RACE */           /* double precision complex base address */
+SingleComplex   *SCPL_MB; /* RACE */           /* single precision complex base address */
+DoublePrecision *DBL_MB;  /* RACE */           /* double precision base address */
+Integer         *INT_MB;  /* RACE */           /* integer base address */
+float           *FLT_MB;  /* RACE */           /* float base address */
+int** GA_Update_Flags; /* RACE */
+int* GA_Update_Signal; /* RACE */
 
 typedef struct {
 long id;
@@ -134,30 +134,32 @@ long dummy;
 } getmem_t;
 
 /* set total limit (bytes) for memory usage per processor to "unlimited" */
-static Integer GA_total_memory = -1;
-static Integer GA_memory_limited = 0;
-struct ga_stat_t GAstat;
-struct ga_bytes_t GAbytes ={0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
-long   *GAstat_arr;
-static Integer GA_memory_limit=0;
-Integer GAme, GAnproc;
-static Integer MPme;
-Integer *mapALL;
+static Integer GA_total_memory = -1; /* RACE */
+static Integer GA_memory_limited = 0; /* RACE */
+struct ga_stat_t GAstat; /* RACE */
+struct ga_bytes_t GAbytes ={0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.}; /* RACE */
+long   *GAstat_arr; /* RACE */
+static Integer GA_memory_limit=0; /* RACE */
+Integer GAme, GAnproc; /* RACE */
+static Integer MPme; /* RACE */
+Integer *mapALL; /* RACE */
 
 #ifdef PERMUTE_PIDS
-char** ptr_array;
+char** ptr_array; /* RACE */
 #endif
 
+/* moved from below */
+static int num_mutexes=0; /* RACE */
+static int chunk_mutex; /* RACE */
 
-char *GA_name_stack[NAME_STACK_LEN];  /* stack for storing names of GA ops */
-int  GA_stack_size=0;
+char *GA_name_stack[NAME_STACK_LEN]; /* RACE */  /* stack for storing names of GA ops */
+int  GA_stack_size=0; /* RACE */
 
 /* Function prototypes */
-int gai_getmem(char* name, char **ptr_arr, C_Long bytes, int type, long *id,
-               int grp_id);
+int gai_getmem(char* name, char **ptr_arr, C_Long bytes, int type, long *id, int grp_id);
 #ifdef ENABLE_CHECKPOINT
-static int ga_group_is_for_ft=0;
-int ga_spare_procs;
+static int ga_group_is_for_ft=0; /* RACE */
+int ga_spare_procs; /* RACE */
 #endif
 
 
@@ -170,7 +172,6 @@ int ga_spare_procs;
 #define ga_ComputeIndexM(_index, _ndim, _subscript, _dims)                     \
 {                                                                              \
   Integer  _i, _factor=1;                                                      \
-  __CRAYX1_PRAGMA("_CRI novector");                                            \
   for(_i=0,*(_index)=0; _i<_ndim; _i++){                                       \
       *(_index) += _subscript[_i]*_factor;                                     \
       if(_i<_ndim-1)_factor *= _dims[_i];                                      \
@@ -183,7 +184,6 @@ int ga_spare_procs;
 #define ga_UpdateSubscriptM(_ndim, _subscript, _lo, _hi, _dims)\
 {                                                                              \
   Integer  _i;                                                                 \
-  __CRAYX1_PRAGMA("_CRI novector");                                            \
   for(_i=0; _i<_ndim; _i++){                                                   \
        if(_subscript[_i] < _hi[_i]) { _subscript[_i]++; break;}                \
        _subscript[_i] = _lo[_i];                                               \
@@ -197,7 +197,6 @@ int ga_spare_procs;
 {                                                                              \
   Integer  _i;                                                                 \
   *_elems = 1;                                                                 \
-  __CRAYX1_PRAGMA("_CRI novector");                                            \
   for(_i=0; _i<_ndim; _i++){                                                   \
        *_elems *= _hi[_i]-_lo[_i] +1;                                          \
        _subscript[_i] = _lo[_i];                                               \
@@ -227,8 +226,6 @@ Integer GAsizeof(Integer type)
 \*/
 void ga_register_proclist_(Integer *list, Integer* np)
 {
-int i;
-
       GA_PUSH_NAME("ga_register_proclist");
       if( *np <0 || *np >GAnproc) pnga_error("invalid number of processors",*np);
       if( *np <GAnproc) pnga_error("Invalid number of processors",*np);
@@ -237,7 +234,7 @@ int i;
       GA_inv_Proc_list = GA_Proc_list + *np;
       if(!GA_Proc_list) pnga_error("could not allocate proclist",*np);
 
-      for(i=0;i< (int)*np; i++){
+      for(int i=0;i< (int)*np; i++){
           int p  = (int)list[i];
           if(p<0 || p>= GAnproc) pnga_error("invalid list entry",p);
           GA_Proc_list[i] = p; 
@@ -250,7 +247,6 @@ int i;
 
 void GA_Register_proclist(int *list, int np)
 {
-      int i;
       GA_PUSH_NAME("ga_register_proclist");
       if( np <0 || np >GAnproc) pnga_error("invalid number of processors",np);
       if( np <GAnproc) pnga_error("Invalid number of processors",np);
@@ -259,7 +255,7 @@ void GA_Register_proclist(int *list, int np)
       GA_inv_Proc_list = GA_Proc_list + np;
       if(!GA_Proc_list) pnga_error("could not allocate proclist",np);
 
-      for(i=0; i< np; i++){
+      for(int i=0; i< np; i++){
           int p  = list[i];
           if(p<0 || p>= GAnproc) pnga_error("invalid list entry",p);
           GA_Proc_list[i] = p;
@@ -334,11 +330,11 @@ Integer  off_dbl, off_int, off_dcpl, off_flt,off_scpl;
 
 
 
-extern int *_ga_argc;
-extern char ***_ga_argv;
-extern int _ga_initialize_args;
-extern int _ga_initialize_c;
-extern int _ga_initialize_f;
+extern int *_ga_argc; /* RACE */
+extern char ***_ga_argv; /* RACE */
+extern int _ga_initialize_args; /* RACE */
+extern int _ga_initialize_c; /* RACE */
+extern int _ga_initialize_f; /* RACE */
 
 /**
  *  Initialize library structures in Global Arrays.
@@ -387,21 +383,18 @@ int bytes;
     
     GA_Default_Proc_Group = -1;
     /* zero in pointers in GA array */
-    _ga_main_data_structure
-       = (global_array_t *)malloc(sizeof(global_array_t)*MAX_ARRAYS);
-    _proc_list_main_data_structure
-       = (proc_list_t *)malloc(sizeof(proc_list_t)*MAX_ARRAYS);
-    if(!_ga_main_data_structure)
-       pnga_error("ga_init:malloc ga failed",0);
-    if(!_proc_list_main_data_structure)
-       pnga_error("ga_init:malloc proc_list failed",0);
+    _ga_main_data_structure = (global_array_t *)malloc(sizeof(global_array_t)*MAX_ARRAYS);
+    _proc_list_main_data_structure = (proc_list_t *)malloc(sizeof(proc_list_t)*MAX_ARRAYS);
+    if(!_ga_main_data_structure) pnga_error("ga_init:malloc ga failed",0);
+    if(!_proc_list_main_data_structure) pnga_error("ga_init:malloc proc_list failed",0);
     GA = _ga_main_data_structure;
     PGRP_LIST = _proc_list_main_data_structure;
-    for(i=0;i<MAX_ARRAYS; i++) {
+    for(int i=0;i<MAX_ARRAYS; i++) {
        GA[i].ptr  = (char**)0;
        GA[i].mapc = (C_Integer*)0;
        GA[i].rstrctd_list = (C_Integer*)0;
        GA[i].rank_rstrctd = (C_Integer*)0;
+       /* TODO initialize mutex here */
 #ifdef ENABLE_CHECKPOINT
        GA[i].record_id = 0;
 #endif
@@ -415,7 +408,6 @@ int bytes;
     GAnproc = (Integer)armci_msg_nproc();
 
     /* Allocate arrays used by library */
-    ProcListPerm = (int*)malloc(GAnproc*sizeof(int));
 #ifdef PERMUTE_PIDS
     ptr_array = (char**)malloc(GAnproc*sizeof(char*));
 #endif
@@ -442,14 +434,18 @@ int bytes;
     gai_init_onesided();
 
     /* set activity status for all arrays to inactive */
-    for(i=0;i<_max_global_array;i++)GA[i].actv=0;
-    for(i=0;i<_max_global_array;i++)GA[i].actv_handle=0;
+    for(int i=0;i<_max_global_array;i++) {
+        GA[i].actv=0;
+        GA[i].actv_handle=0;
+    }
 
     /* Create proc list for mirrored arrays */
     PGRP_LIST[0].map_proc_list = (int*)malloc(GAnproc*sizeof(int)*2);
     PGRP_LIST[0].inv_map_proc_list = PGRP_LIST[0].map_proc_list + GAnproc;
-    for (i=0; i<GAnproc; i++) PGRP_LIST[0].map_proc_list[i] = -1;
-    for (i=0; i<GAnproc; i++) PGRP_LIST[0].inv_map_proc_list[i] = -1;
+    for (i=0; i<GAnproc; i++) {
+        PGRP_LIST[0].map_proc_list[i] = -1;
+        PGRP_LIST[0].inv_map_proc_list[i] = -1;
+    }
     nnode = pnga_cluster_nodeid();
     nproc = pnga_cluster_nprocs(nnode);
     zero = 0;
@@ -492,8 +488,7 @@ int bytes;
     Integer tmplist[1000];
     Integer tmpcount;
     tmpcount = GAnproc-ga_spare_procs;
-    for(i=0;i<tmpcount;i++)
-            tmplist[i]=i;
+    for(int i=0;i<tmpcount;i++) tmplist[i]=i;
     ga_group_is_for_ft=1;
     GA_Default_Proc_Group = pnga_pgroup_create(tmplist,tmpcount);
     ga_group_is_for_ft=0;
@@ -562,9 +557,12 @@ logical pnga_memory_limited()
 
 Integer pnga_inquire_memory()
 {
-Integer i, sum=0;
-    for(i=0; i<_max_global_array; i++) 
-        if(GA[i].actv) sum += (Integer)GA[i].size; 
+    Integer sum=0;
+    for(int i=0; i<_max_global_array; i++) {
+        if(GA[i].actv) {
+            sum += (Integer)GA[i].size; 
+        }
+    }
     return(sum);
 }
 
@@ -650,7 +648,6 @@ void pnga_initialize_ltd(Integer mem_limit)
 {\
 int _d;\
     if(ndim<1||ndim>MAXDIM) pnga_error("unsupported number of dimensions",ndim);\
-  __CRAYX1_PRAGMA("_CRI novector");                                         \
     for(_d=0; _d<ndim; _d++)\
          if(dims[_d]<1)pnga_error("wrong dimension specified",dims[_d]);\
 }
@@ -976,10 +973,8 @@ void ngai_get_first_last_indices( Integer g_a)  /* array handle (input) */
 \*/
 void gai_print_subscript(char *pre,int ndim, Integer subscript[], char* post)
 {
-        int i;
-
         printf("%s [",pre);
-        for(i=0;i<ndim;i++){
+        for(int i=0;i<ndim;i++){
                 printf("%ld",(long)subscript[i]);
                 if(i==ndim-1)printf("] %s",post);
                 else printf(",");
@@ -1157,7 +1152,6 @@ Integer pnga_pgroup_create(Integer *list, Integer count)
 logical pnga_pgroup_destroy(Integer grp_id)
 {
   logical ret = TRUE;
-  int i, ok;
 
    GA_PUSH_NAME("ga_pgroup_destroy_");
   _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous sync masking*/
@@ -1166,8 +1160,8 @@ logical pnga_pgroup_destroy(Integer grp_id)
        ARMCI_Group_free(&PGRP_LIST[grp_id].group);
 #endif
   /* check to make sure there are no GAs that depend on this process group */
-  i=0;
-  ok = 1;
+  int i  = 0;
+  int ok = 1;
   do{
       if(GA[i].p_handle == (int)grp_id && GA[i].actv) ok = 0;
       i++;
@@ -1317,7 +1311,7 @@ Integer pnga_pgroup_split_irreg(Integer grp, Integer mycolor)
   me = pnga_nodeid();
 
   /* Figure out what procs are in my group */
-  for(i=0; i<nprocs; i++) color_arr[i] = 0;
+  for(int i=0; i<nprocs; i++) color_arr[i] = 0;
   color_arr[me] = mycolor;
   pnga_gop(pnga_type_f2c(MT_F_INT), color_arr, nprocs, "+");
 
@@ -1355,7 +1349,7 @@ ARMCI_Group* ga_get_armci_group_(int grp_id)
 #   pragma weak wnga_create_handle = pnga_create_handle
 #endif
 
-Integer pnga_create_handle()
+Integer pnga_create_handle(void)
 {
   Integer ga_handle, i, g_a;
   /*** Get next free global array handle ***/
@@ -1389,6 +1383,7 @@ Integer pnga_create_handle()
                                    /* then array is not restricted.     */
   GA[ga_handle].actv_handle = 1;
   GA[ga_handle].has_data = 1;
+  /* TODO do something with mutex here? */
   GA_POP_NAME;
   return g_a;
 }
@@ -2303,7 +2298,7 @@ int status=0;
 char *base;
 long diff, item_size;  
 Integer *adjust;
-int i, nproc,grp_me=GAme;
+int nproc,grp_me=GAme;
 
     if (grp_id > 0) {
        nproc  = PGRP_LIST[grp_id].map_nproc;
@@ -2344,7 +2339,7 @@ int i, nproc,grp_me=GAme;
 	  status = ARMCI_Malloc((void**)ptr_array, bytes);
        if(bytes!=0 && ptr_array[grp_me]==NULL) 
 	  pnga_error("gai_get_shmem: ARMCI Malloc failed", GAme);
-       for(i=0;i<nproc;i++)ptr_arr[i] = ptr_array[GA_inv_Proc_list[i]];
+       for(int i=0;i<nproc;i++)ptr_arr[i] = ptr_array[GA_inv_Proc_list[i]];
     }else
 #endif
        
@@ -2367,12 +2362,10 @@ int i, nproc,grp_me=GAme;
     /* adjust all addresses if they are not alligned on corresponding nodes*/
 
     /* we need storage for GAnproc*sizeof(Integer) */
-    /* JAD -- fixed bug where _ga_map was reused before gai_getmem was done
-     * with it. Now malloc/free needed memory. */
     adjust = (Integer*)malloc(GAnproc*sizeof(Integer));
 
     diff = (GA_ABS( base - (char *) ptr_arr[grp_me])) % item_size; 
-    for(i=0;i<nproc;i++)adjust[i]=0;
+    for(int i=0;i<nproc;i++)adjust[i]=0;
     adjust[grp_me] = (diff > 0) ? item_size - diff : 0;
     *adj = adjust[grp_me];
 
@@ -2381,7 +2374,7 @@ int i, nproc,grp_me=GAme;
     else
        pnga_gop(pnga_type_f2c(MT_F_INT), adjust, nproc, "+");
     
-    for(i=0;i<nproc;i++){
+    for(int i=0;i<nproc;i++){
        ptr_arr[i] = adjust[i] + (char*)ptr_arr[i];
     }
     free(adjust);
@@ -2459,7 +2452,7 @@ char *ptr = (char*)0;
 void *GA_Getmem(int type, int nelem, int grp_id)
 {
 char **ptr_arr=(char**)0;
-int  rc,i;
+int  rc;
 long id;
 int bytes;
 int extra=sizeof(getmem_t)+GAnproc*sizeof(char*);
@@ -2474,14 +2467,18 @@ Integer status;
          if(!status)GA_total_memory +=bytes+extra;
      }else status = 1;
 
+     /* Everything about _ga_map in global scope is thread-unsafe
+      * so we try a stack temporary here instead. */
+     Integer _ga_map[GAnproc*sizeof(char**)];
      ptr_arr=(char**)_ga_map; /* need memory GAnproc*sizeof(char**) */
+
      rc= gai_getmem("ga_getmem", ptr_arr,(Integer)bytes+extra, type, &id, grp_id);
      if(rc)pnga_error("ga_getmem: failed to allocate memory",bytes+extra);
 
      myptr = ptr_arr[GAme];  
 
      /* make sure that remote memory addresses point to user memory */
-     for(i=0; i<GAnproc; i++)ptr_arr[i] += extra;
+     for(int i=0; i<GAnproc; i++)ptr_arr[i] += extra;
 
 #ifndef AVOID_MA_STORAGE
      if(ARMCI_Uses_shm()) 
@@ -2543,9 +2540,8 @@ Integer ga_handle, lproc;
    } else {
      C_Integer index[MAXDIM];
      int ndim = GA[ga_handle].ndim;
-     int i;
      gam_find_block_indices(ga_handle,lproc,index);
-     for (i=0; i<ndim; i++) {
+     for (int i=0; i<ndim; i++) {
        lo[i] = index[i]*GA[ga_handle].block_dims[i] + 1;
        hi[i] = (index[i]+1)*GA[ga_handle].block_dims[i];
        if (hi[i] > GA[ga_handle].dims[i]) hi[i] = GA[ga_handle].dims[i];
@@ -2595,7 +2591,7 @@ logical pnga_duplicate(Integer g_a, Integer *g_b, char* array_name)
 {
   char     **save_ptr;
   C_Long  mem_size, mem_size_proc;
-  Integer  i, ga_handle, status;
+  Integer  ga_handle, status;
   int local_sync_begin,local_sync_end;
   Integer grp_id, grp_me=GAme;
   /* Integer grp_nproc=GAnproc; */
@@ -2616,7 +2612,8 @@ logical pnga_duplicate(Integer g_a, Integer *g_b, char* array_name)
   ga_check_handleM(g_a,"ga_duplicate");       
 
   /* find a free global_array handle for g_b */
-  ga_handle =-1; i=0;
+  ga_handle =-1; 
+  int i=0;
   do{
     if(!GA[i].actv_handle) ga_handle=i;
     i++;
@@ -2635,7 +2632,7 @@ logical pnga_duplicate(Integer g_a, Integer *g_b, char* array_name)
   GA[ga_handle].ptr = save_ptr;
   if (maplen > 0) {
     GA[ga_handle].mapc = (C_Integer*)malloc((maplen+1)*sizeof(C_Integer*));
-    for(i=0;i<maplen; i++)GA[ga_handle].mapc[i] = GA[GA_OFFSET+ g_a].mapc[i];
+    for(int i=0;i<maplen; i++)GA[ga_handle].mapc[i] = GA[GA_OFFSET+ g_a].mapc[i];
     GA[ga_handle].mapc[maplen] = -1;
   }
 
@@ -2732,7 +2729,7 @@ logical pnga_duplicate(Integer g_a, Integer *g_b, char* array_name)
 int GA_Assemble_duplicate(int g_a, char* array_name, void* ptr)
 {
 char     **save_ptr;
-int      i, ga_handle;
+int      ga_handle;
 int extra = sizeof(getmem_t)+GAnproc*sizeof(char*);
 getmem_t *info = (getmem_t *)((char*)ptr - extra);
 char **ptr_arr = (char**)(info+1);
@@ -2747,7 +2744,8 @@ int maplen = calc_maplen(GA_OFFSET + g_a);
       ga_check_handleM(g_a,"ga_assemble_duplicate");
 
       /* find a free global_array handle for g_b */
-      ga_handle =-1; i=0;
+      ga_handle =-1; 
+      int i=0;
       do{
         if(!GA[i].actv_handle) ga_handle=i;
         i++;
@@ -2767,7 +2765,7 @@ int maplen = calc_maplen(GA_OFFSET + g_a);
       GA[ga_handle].ptr = save_ptr;
       if (maplen > 0) {
         GA[ga_handle].mapc = (C_Integer*)malloc((maplen+1)*sizeof(C_Integer*));
-        for(i=0;i<maplen; i++)GA[ga_handle].mapc[i] = GA[GA_OFFSET+ g_a].mapc[i];
+        for(int i=0;i<maplen; i++)GA[ga_handle].mapc[i] = GA[GA_OFFSET+ g_a].mapc[i];
         GA[ga_handle].mapc[maplen] = -1;
       }
 
@@ -2836,6 +2834,8 @@ int local_sync_begin,local_sync_end;
        GA[ga_handle].mapc = NULL;
     } 
 
+    /* TODO do something with mutex here */
+
     if(GA[ga_handle].ptr[grp_me]==NULL){
        return TRUE;
     } 
@@ -2902,7 +2902,6 @@ Integer i, handle;
     GA_memory_limited = 0;
     gai_finalize_onesided();
     free(GA_proclist);
-    free(ProcListPerm);
 #ifdef PERMUTE_PIDS
     free(ptr_array);
 #endif
@@ -2928,8 +2927,9 @@ Integer i, handle;
 Integer pnga_verify_handle(Integer g_a)
 {
   return (Integer)
-    ((g_a + GA_OFFSET>= 0) && (g_a + GA_OFFSET< _max_global_array) && 
-             GA[GA_OFFSET + (g_a)].actv);
+    ((g_a + GA_OFFSET>= 0) && 
+     (g_a + GA_OFFSET< _max_global_array) && 
+     (GA[GA_OFFSET + (g_a)].actv));
 }
  
 
@@ -2943,7 +2943,7 @@ Integer pnga_verify_handle(Integer g_a)
 
 void pnga_randomize(Integer g_a, void* val)
 {
-  int i,handle=GA_OFFSET + (int)g_a;
+  int handle=GA_OFFSET + (int)g_a;
   char *ptr;
   int local_sync_begin,local_sync_end;
   C_Long elems;
@@ -2974,26 +2974,26 @@ void pnga_randomize(Integer g_a, void* val)
     switch (GA[handle].type){
 /*
       case C_DCPL: 
-        for(i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*) rand();
+        for(int i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*) rand();
         break;
       case C_SCPL: 
-        for(i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
+        for(int i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
         break;
 */
       case C_DBL:  
-        for(i=0; i<elems;i++)((double*)ptr)[i]=*(double*) val * ((double)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((double*)ptr)[i]=*(double*) val * ((double)rand())/RAND_MAX;
         break;
       case C_INT:  
-        for(i=0; i<elems;i++)((int*)ptr)[i]=*(int*) val * ((int)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((int*)ptr)[i]=*(int*) val * ((int)rand())/RAND_MAX;
         break;
       case C_FLOAT:
-        for(i=0; i<elems;i++)((float*)ptr)[i]=*(float*) val * ((float)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((float*)ptr)[i]=*(float*) val * ((float)rand())/RAND_MAX;
         break;     
       case C_LONG:
-        for(i=0; i<elems;i++)((long*)ptr)[i]=*(long*) val * ((long)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((long*)ptr)[i]=*(long*) val * ((long)rand())/RAND_MAX;
         break;
       case C_LONGLONG:
-        for(i=0; i<elems;i++)((long long*)ptr)[i]=*( long long*) val * ((long long)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((long long*)ptr)[i]=*( long long*) val * ((long long)rand())/RAND_MAX;
         break;
       default:
         pnga_error("type not supported",GA[handle].type);
@@ -3005,26 +3005,26 @@ void pnga_randomize(Integer g_a, void* val)
     switch (GA[handle].type){
 /*
       case C_DCPL: 
-        for(i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*)val;
+        for(int i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*)val;
         break;
       case C_SCPL: 
-        for(i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
+        for(int i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
         break;
 */
       case C_DBL:  
-        for(i=0; i<elems;i++)((double*)ptr)[i]=*(double*)val * ((double)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((double*)ptr)[i]=*(double*)val * ((double)rand())/RAND_MAX;
         break;
       case C_INT:  
-        for(i=0; i<elems;i++)((int*)ptr)[i]=*(int*)val * ((int)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((int*)ptr)[i]=*(int*)val * ((int)rand())/RAND_MAX;
         break;
       case C_FLOAT:
-        for(i=0; i<elems;i++)((float*)ptr)[i]=*(float*)val * ((float)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((float*)ptr)[i]=*(float*)val * ((float)rand())/RAND_MAX;
         break;     
       case C_LONG:
-        for(i=0; i<elems;i++)((long*)ptr)[i]=*(long*)val * ((long)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((long*)ptr)[i]=*(long*)val * ((long)rand())/RAND_MAX;
         break;
       case C_LONGLONG:
-        for(i=0; i<elems;i++)((long long*)ptr)[i]=*(long long*)val * ((long long)rand())/RAND_MAX;
+        for(int i=0; i<elems;i++)((long long*)ptr)[i]=*(long long*)val * ((long long)rand())/RAND_MAX;
         break;
       default:
         pnga_error("type not supported",GA[handle].type);
@@ -3076,25 +3076,25 @@ void pnga_fill(Integer g_a, void* val)
 
     switch (GA[handle].type){
       case C_DCPL: 
-        for(i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*)val;
+        for(int i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*)val;
         break;
       case C_SCPL: 
-        for(i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
+        for(int i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
         break;
       case C_DBL:  
-        for(i=0; i<elems;i++)((double*)ptr)[i]=*(double*)val;
+        for(int i=0; i<elems;i++)((double*)ptr)[i]=*(double*)val;
         break;
       case C_INT:  
-        for(i=0; i<elems;i++)((int*)ptr)[i]=*(int*)val;
+        for(int i=0; i<elems;i++)((int*)ptr)[i]=*(int*)val;
         break;
       case C_FLOAT:
-        for(i=0; i<elems;i++)((float*)ptr)[i]=*(float*)val;
+        for(int i=0; i<elems;i++)((float*)ptr)[i]=*(float*)val;
         break;     
       case C_LONG:
-        for(i=0; i<elems;i++)((long*)ptr)[i]=*(long*)val;
+        for(int i=0; i<elems;i++)((long*)ptr)[i]=*(long*)val;
         break;
       case C_LONGLONG:
-        for(i=0; i<elems;i++)((long long*)ptr)[i]=*( long long*)val;
+        for(int i=0; i<elems;i++)((long long*)ptr)[i]=*( long long*)val;
         break;
       default:
         pnga_error("type not supported",GA[handle].type);
@@ -3105,25 +3105,25 @@ void pnga_fill(Integer g_a, void* val)
     elems = (C_Long)I_elems;
     switch (GA[handle].type){
       case C_DCPL: 
-        for(i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*)val;
+        for(int i=0; i<elems;i++)((DoubleComplex*)ptr)[i]=*(DoubleComplex*)val;
         break;
       case C_SCPL: 
-        for(i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
+        for(int i=0; i<elems;i++)((SingleComplex*)ptr)[i]=*(SingleComplex*)val;
         break;
       case C_DBL:  
-        for(i=0; i<elems;i++)((double*)ptr)[i]=*(double*)val;
+        for(int i=0; i<elems;i++)((double*)ptr)[i]=*(double*)val;
         break;
       case C_INT:  
-        for(i=0; i<elems;i++)((int*)ptr)[i]=*(int*)val;
+        for(int i=0; i<elems;i++)((int*)ptr)[i]=*(int*)val;
         break;
       case C_FLOAT:
-        for(i=0; i<elems;i++)((float*)ptr)[i]=*(float*)val;
+        for(int i=0; i<elems;i++)((float*)ptr)[i]=*(float*)val;
         break;     
       case C_LONG:
-        for(i=0; i<elems;i++)((long*)ptr)[i]=*(long*)val;
+        for(int i=0; i<elems;i++)((long*)ptr)[i]=*(long*)val;
         break;
       case C_LONGLONG:
-        for(i=0; i<elems;i++)((long long*)ptr)[i]=*(long long*)val;
+        for(int i=0; i<elems;i++)((long long*)ptr)[i]=*(long long*)val;
         break;
       default:
         pnga_error("type not supported",GA[handle].type);
@@ -3150,7 +3150,7 @@ Integer handle = GA_OFFSET + g_a,i;
    ga_check_handleM(g_a, "nga_inquire");
    *type       = GA[handle].type;
    *ndim       = GA[handle].ndim;
-   for(i=0;i<*ndim;i++) dims[i]=(Integer)GA[handle].dims[i];
+   for(int i=0;i<*ndim;i++) dims[i]=(Integer)GA[handle].dims[i];
 }
 
 /**
@@ -3283,9 +3283,6 @@ logical pnga_locate_nnodes( Integer g_a,
   ga_check_handleM(g_a, "nga_locate_nnodes");
 
   ga_handle = GA_OFFSET + g_a;
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
   for(d = 0; d< GA[ga_handle].ndim; d++)
     if((lo[d]<1 || hi[d]>GA[ga_handle].dims[d]) ||(lo[d]>hi[d]))return FALSE;
 
@@ -3295,9 +3292,6 @@ logical pnga_locate_nnodes( Integer g_a,
   if (!use_blocks) {
     /* find "processor coordinates" for the top left corner and store them
      * in ProcT */
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
     for(d = 0, dpos = 0; d< GA[ga_handle].ndim; d++){
       findblock(GA[ga_handle].mapc + dpos, GA[ga_handle].nblock[d], 
           GA[ga_handle].scale[d], lo[d], &procT[d]);
@@ -3306,9 +3300,6 @@ logical pnga_locate_nnodes( Integer g_a,
 
     /* find "processor coordinates" for the right bottom corner and store
      * them in procB */
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
     for(d = 0, dpos = 0; d< GA[ga_handle].ndim; d++){
       findblock(GA[ga_handle].mapc + dpos, GA[ga_handle].nblock[d], 
           GA[ga_handle].scale[d], hi[d], &procB[d]);
@@ -3366,9 +3357,6 @@ logical pnga_locate_nnodes( Integer g_a,
   }
   return(TRUE);
 }
-#ifdef __crayx1
-#pragma _CRI inline nga_locate_nnodes_
-#endif
 
 
 /**
@@ -3416,9 +3404,6 @@ logical pnga_locate_region( Integer g_a,
   ga_check_handleM(g_a, "nga_locate_region");
 
   ga_handle = GA_OFFSET + g_a;
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
   for(d = 0; d< GA[ga_handle].ndim; d++)
     if((lo[d]<1 || hi[d]>GA[ga_handle].dims[d]) ||(lo[d]>hi[d]))return FALSE;
 
@@ -3428,9 +3413,6 @@ logical pnga_locate_region( Integer g_a,
   if (!use_blocks) {
     /* find "processor coordinates" for the top left corner and store them
      * in ProcT */
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
     for(d = 0, dpos = 0; d< GA[ga_handle].ndim; d++){
       findblock(GA[ga_handle].mapc + dpos, GA[ga_handle].nblock[d], 
           GA[ga_handle].scale[d], lo[d], &procT[d]);
@@ -3439,9 +3421,6 @@ logical pnga_locate_region( Integer g_a,
 
     /* find "processor coordinates" for the right bottom corner and store
      * them in procB */
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
     for(d = 0, dpos = 0; d< GA[ga_handle].ndim; d++){
       findblock(GA[ga_handle].mapc + dpos, GA[ga_handle].nblock[d], 
           GA[ga_handle].scale[d], hi[d], &procB[d]);
@@ -3469,14 +3448,8 @@ logical pnga_locate_region( Integer g_a,
 
       offset = *np *(ndim*2); /* location in map to put patch range */
 
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
       for(d = 0; d< ndim; d++)
         map[d + offset ] = lo[d] < _lo[d] ? _lo[d] : lo[d];
-#ifdef __crayx1
-#pragma _CRI novector
-#endif
       for(d = 0; d< ndim; d++)
         map[ndim + d + offset ] = hi[d] > _hi[d] ? _hi[d] : hi[d];
 
@@ -3532,9 +3505,6 @@ logical pnga_locate_region( Integer g_a,
   }
   return(TRUE);
 }
-#ifdef __crayx1
-#pragma _CRI inline pnga_locate_region
-#endif
 
 /**
  *  Returns the processor grid for the global array
@@ -3552,7 +3522,7 @@ int i, n;
 
      n = GA[ga_handle].ndim;
 
-     for(i=0; i<n; i++) nblock[i] = (Integer)GA[ga_handle].nblock[i];
+     for(int i=0; i<n; i++) nblock[i] = (Integer)GA[ga_handle].nblock[i];
 }
 
 /**
@@ -3642,14 +3612,14 @@ int i;
 
    if(GA[h_a].ndim != GA[h_b].ndim) return FALSE; 
 
-   for(i=0; i <GA[h_a].ndim; i++)
+   for(int i=0; i <GA[h_a].ndim; i++)
        if(GA[h_a].dims[i] != GA[h_b].dims[i]) return FALSE;
 
    if (GA[h_a].block_flag != GA[h_b].block_flag) return FALSE;
    if (GA[h_a].block_sl_flag != GA[h_b].block_sl_flag) return FALSE;
    if (GA[h_a].block_flag == 0) {
      if (h_a_maplen != h_b_maplen) return FALSE;
-     for(i=0; i <h_a_maplen; i++){
+     for(int i=0; i <h_a_maplen; i++){
        if(GA[h_a].mapc[i] != GA[h_b].mapc[i]) return FALSE;
        if(GA[h_a].mapc[i] == -1) break;
      }
@@ -3680,8 +3650,6 @@ int i;
 }
 
 
-static int num_mutexes=0;
-static int chunk_mutex;
 /**
  * Create a set of mutexes
  */
@@ -4338,8 +4306,7 @@ void ga_checkpoint_arrays(Integer *gas,int num)
 
 int ga_recover_arrays(Integer *gas, int num)
 {
-    int i;
-    for(i=0;i<num;i++){
+    for(int i=0;i<num;i++){
        int ga = *(gas+i);
        int hdl = GA_OFFSET + ga;
        if(GA[hdl].record_id!=0)
