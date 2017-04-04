@@ -23,7 +23,6 @@ case "$os" in
                 brew install mpich || brew upgrade mpich
                 ;;
             openmpi)
-                # Homebrew is at 1.10.2, which is broken for STRIDED/IOV=DIRECT.
                 brew info open-mpi
                 brew install open-mpi || brew upgrade open-mpi
                 ;;
