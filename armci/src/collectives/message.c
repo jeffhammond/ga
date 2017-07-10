@@ -5,8 +5,6 @@
 /* $Id: message.c,v 1.58.6.4 2007-04-24 10:08:26 vinod Exp $ */
 #if defined(BGML)
 # include "bgml.h"
-#elif defined(PVM)
-#   include <pvm3.h>
 #elif defined(TCGMSG)
 #   include <sndrcv.h>
 static void tcg_brdcst(long type, void *buf, long lenbuf, long originator)
@@ -464,8 +462,6 @@ void parmci_msg_barrier()
   bgml_barrier (3); /* this is always faster than MPI_Barrier() */
 #elif defined(MSG_COMMS_MPI)
      MPI_Barrier(ARMCI_COMM_WORLD);
-#  elif defined(PVM)
-     pvm_barrier(mp_group_name, armci_nproc);
 #  elif defined(LAPI)
 #if !defined(NEED_MEM_SYNC)
      if(_armci_barrier_init)
@@ -526,8 +522,6 @@ int armci_msg_me()
     }
     return armci_me;
 
-#elif defined(PVM)
-    return(pvm_getinst(mp_group_name,pvm_mytid()));
 #else
     return (int)NODEID_();
 #endif
@@ -549,8 +543,6 @@ int armci_msg_nproc()
         counter = 1;
     }
     return armci_nproc;
-#elif defined(PVM)
-    return(pvm_gsize(mp_group_name));
 #else
     return (int)NNODES_();
 #endif
@@ -560,7 +552,6 @@ int armci_msg_nproc()
 #define BROKEN_MPI_ABORT
 #endif
 
-#ifndef PVM
 double armci_timer()
 {
 #ifdef BGML
@@ -574,7 +565,6 @@ double armci_timer()
     return TCGTIME_();
 #endif
 }
-#endif
 
 
 void armci_msg_abort(int code)
@@ -587,12 +577,8 @@ void armci_msg_abort(int code)
 #    ifndef BROKEN_MPI_ABORT
     MPI_Abort(ARMCI_COMM_WORLD,code);
 #    endif
-#elif defined(PVM)
-    char error_msg[25];
-    sprintf(error_msg, "ARMCI aborting [%d]", code);
-    pvm_halt();
 #else
-    Error("ARMCI aborting",(long)code);
+     Error("ARMCI aborting",(long)code);
 #endif
     fprintf(stderr,"%d:aborting\n",armci_me);
     /* trap for broken abort in message passing libs */
@@ -853,8 +839,6 @@ void armci_msg_brdcst(void* buffer, int len, int root)
    BGTr_Bcast(root, buffer, len, PCLASS);
 # elif defined(MSG_COMMS_MPI)
       MPI_Bcast(buffer, len, MPI_CHAR, root, ARMCI_COMM_WORLD);
-#  elif defined(PVM)
-      armci_msg_bcast(buffer, len, root);
 #  else
    {
       long ttag=ARMCI_TAG, llen=len, rroot=root;
@@ -868,8 +852,6 @@ void armci_msg_snd(int tag, void* buffer, int len, int to)
 {
 #  ifdef MSG_COMMS_MPI
       MPI_Send(buffer, len, MPI_CHAR, to, tag, ARMCI_COMM_WORLD);
-#  elif defined(PVM)
-      pvm_psend(pvm_gettid(mp_group_name, to), tag, buffer, len, PVM_BYTE);
 # elif defined(BGML)
       /* We don't actually used armci_msg_snd in ARMCI. we use optimized 
        * collectives where
@@ -893,11 +875,6 @@ void armci_msg_rcv(int tag, void* buffer, int buflen, int *msglen, int from)
       MPI_Status status;
       MPI_Recv(buffer, buflen, MPI_CHAR, from, tag, ARMCI_COMM_WORLD, &status);
       if(msglen) MPI_Get_count(&status, MPI_CHAR, msglen);
-#  elif defined(PVM)
-      int src, rtag,mlen;
-      pvm_precv(pvm_gettid(mp_group_name, from), tag, buffer, buflen, PVM_BYTE,
-                &src, &rtag, &mlen);
-      if(msglen)*msglen=mlen;
 #elif defined(BGML)
             armci_die("bgl shouldn't use armci_msg_rcv", armci_me);
 #  else
@@ -921,11 +898,6 @@ int armci_msg_rcvany(int tag, void* buffer, int buflen, int *msglen)
       if(msglen)if(MPI_SUCCESS!=MPI_Get_count(&status, MPI_CHAR, msglen))
                        armci_die("armci_msg_rcvany: count failed ", tag);
       return (int)status.MPI_SOURCE;
-#  elif defined(PVM)
-      int src, rtag,mlen;
-      pvm_precv(-1, tag, buffer, buflen, PVM_BYTE, &src, &rtag, &mlen);
-      if(msglen)*msglen=mlen;
-      return(pvm_getinst(mp_group_name,src));
 # elif defined (BGML)
       armci_die("bgl shouldn't use armci_msg_rcvany", armci_me);
 #  else
@@ -2284,10 +2256,6 @@ void armci_msg_group_dgop(double *x, int n, char* op,ARMCI_Group *group)
 /*********************** End ARMCI Groups Code ****************************/
 
 
-#ifdef PVM
-/* set the group name if using PVM */
-void ARMCI_PVM_Init(char *mpgroup)
-{
 #ifdef CRAY
     mp_group_name = (char *)NULL;
 #else
@@ -2298,4 +2266,3 @@ void ARMCI_PVM_Init(char *mpgroup)
     }
 #endif
 }
-#endif
