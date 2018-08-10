@@ -24,20 +24,9 @@
 
 #define DIM1 5
 #define DIM2 3
-#ifdef __sun
-/* Solaris has shared memory shortages in the default system configuration */
-# define DIM3 6
-# define DIM4 5
-# define DIM5 4
-#elif defined(__alpha__)
-# define DIM3 8
-# define DIM4 5
-# define DIM5 6
-#else
-# define DIM3 8
-# define DIM4 9
-# define DIM5 7
-#endif
+#define DIM3 8
+#define DIM4 9
+#define DIM5 7
 #define DIM6 3
 #define DIM7 2
 
@@ -78,52 +67,6 @@ int me, nproc;
 void *work[MAXPROC]; /* work array for propagating addresses */
 
 
-
-#ifdef PVM
-void pvm_init(int argc, char *argv[])
-{
-  int mytid, mygid, ctid[MAXPROC];
-  int np, i;
-
-  mytid = pvm_mytid();
-  if ((argc != 2) && (argc != 1)) {
-    goto usage;
-  }
-  if (argc == 1) {
-    np = 1;
-  }
-  if (argc == 2)
-    if ((np = atoi(argv[1])) < 1) {
-      goto usage;
-    }
-  if (np > MAXPROC) {
-    goto usage;
-  }
-
-  mygid = pvm_joingroup(MPGROUP);
-
-  if (np > 1)
-    if (mygid == 0) {
-      i = pvm_spawn(argv[0], argv + 1, 0, "", np - 1, ctid);
-    }
-
-  while (pvm_gsize(MPGROUP) < np) {
-    sleep(1);
-  }
-
-  /* sync */
-  pvm_barrier(MPGROUP, np);
-
-  printf("PVM initialization done!\n");
-
-  return;
-
-usage:
-  fprintf(stderr, "usage: %s <nproc>\n", argv[0]);
-  pvm_exit();
-  exit(-1);
-}
-#endif
 
 /*void create_array(void *a[], int elem_size, int ndim, int dims[])*/
 void create_array(double *a[], int ndim, int dims[])

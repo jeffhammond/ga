@@ -27,20 +27,9 @@
 
 #define DIM1 5
 #define DIM2 3
-#ifdef __sun
-/* Solaris has shared memory shortages in the default system configuration */
-# define DIM3 6
-# define DIM4 5
-# define DIM5 4
-#elif defined(__alpha__)
-# define DIM3 8
-# define DIM4 5
-# define DIM5 6
-#else
-# define DIM3 8
-# define DIM4 9
-# define DIM5 7
-#endif
+#define DIM3 8
+#define DIM4 9
+#define DIM5 7
 #define DIM6 3
 #define DIM7 2
 

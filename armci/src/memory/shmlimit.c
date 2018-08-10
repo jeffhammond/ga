@@ -37,10 +37,6 @@
 
 #define DEBUG_ 0
 
-#if defined(DECOSF) || defined(SOLARIS64) || defined(HPUX)
-#define PIPE_AFTER_FORK_BUG
-#endif
-
 void (*armci_sig_chld_orig)();
 static int status=0;
 int armci_shmlimit_caught_sigchld=0;
@@ -88,9 +84,6 @@ int armci_child_shmem_init()
 {
     pid_t pid;
     int x;
-#ifdef PIPE_AFTER_FORK_BUG
-    int i;
-#endif
 
     int y;
     int fd[2];
@@ -108,10 +101,6 @@ int armci_child_shmem_init()
 
        x= armci_shmem_test();
 
-#ifdef PIPE_AFTER_FORK_BUG
-       /* due to a bug in OSF1 V4.0/1229/alpha first item written gets hosed*/
-       for(i=0;i<2;i++)
-#endif
            val=write(fd[1],&x,sizeof(int));
            if(val < 0 || (size_t)val < sizeof(int))
                          armci_die("armci shmem_test: write failed",0);
@@ -121,10 +110,6 @@ int armci_child_shmem_init()
 
        pid_t rc;
 
-#ifdef PIPE_AFTER_FORK_BUG
-       /* due to a bug in OSF1 V4.0/1229/alpha first item read is garbage */
-       for(i=0;i<2;i++)
-#endif
           val=read(fd[0],&y,sizeof(int));
           if(val < 0 || (size_t)val < sizeof(int))
                          armci_die("armci shmem_test: read failed",val);

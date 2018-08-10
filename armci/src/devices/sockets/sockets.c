@@ -74,11 +74,7 @@ typedef socklen_t soclen_t;
 typedef int soclen_t;
 #   endif
 #else
-#   ifdef NEC
-typedef int soclen_t;
-#   else
 typedef socklen_t soclen_t;
-#   endif
 #endif
 
 
@@ -801,7 +797,7 @@ againacc:
   return msgsock;
 }
 
-#if !defined(SGI) && !defined(WIN32)
+#if !defined(WIN32)
 struct hostent *gethostbyname();
 #endif
 

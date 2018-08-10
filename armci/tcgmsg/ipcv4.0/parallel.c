@@ -5,18 +5,13 @@
 /* $Header: /tmp/hpctools/ga/tcgmsg/ipcv4.0/parallel.c,v 1.22 2005-02-22 18:47:02 manoj Exp $ */
 
 #include <stdio.h>
-#ifdef SEQUENT
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 #include <sys/types.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#if defined(SUN) || defined(ALLIANT) || defined(ENCORE) || defined(SEQUENT) || \
-    defined(AIX) || defined(NEXT)    || defined(LINUX)
+#if defined(AIX) || defined(LINUX)
 #include <sys/wait.h>
 #endif
 
@@ -27,27 +22,11 @@
 #include "tcgsockets.h"
 
 extern char *getenv();
-#if defined(ULTRIX) || defined(SGI) || defined(NEXT) || defined(HPUX) || \
-    defined(KSR)    || defined(DECOSF)
-extern void *malloc();
-#else
 #include <stdlib.h>
-#endif
-
-#if 0
-#if !(defined(SGI) || defined(LINUX))
-extern char *strdup();
-#endif
-#endif
 
 extern void NextValueServer();
 extern void Error();
 extern int WaitAll(long nchild);
-
-#if (defined(SUN) && !defined(SOLARIS))
-    extern char *sprintf();
-#endif
-
 
 static char *ProcgrpFile(argc, argv)
      int argc;
@@ -272,17 +251,8 @@ static long RemoteCreate(remote_hostname, remote_username,
       if ( (tmp = getenv("TCGRSH")) != (char *) NULL )
 	(void) execv(tmp,argv2);
       else 
-#ifdef SGI
-      (void) execv("/usr/bsd/rsh",argv2);
-#endif
-#ifdef HPUX
-      (void) execv("/usr/bin/remsh",argv2);
-#endif
 #if defined(LINUX)
       (void) execv("/usr/bin/rsh",argv2);
-#endif
-#if !defined(SGI) && !defined(HPUX) && !defined(LINUX)
-      (void) execv("/usr/ucb/rsh",argv2);
 #endif
     }
     else {

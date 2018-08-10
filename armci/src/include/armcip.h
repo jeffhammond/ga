@@ -14,28 +14,7 @@
         printf("\n%d:%s:%d:%s:%s:%d",armci_me,__FILE__,__LINE__,FUNCTION_NAME,__ARMCI_ST,__ARMCI_NU)*/
 #define ARMCI_PR_DBG(__ARMCI_ST,__ARMCI_NU) 
 
-#ifdef QUADRICS
-#include <elan/elan.h>
-#ifdef QSNETLIBS_VERSION_CODE
-#ifndef DECOSF
-#  define ELAN_ACC
-#  define PENDING_OPER(x) ARMCI_ACC_INT
-#endif
-
-#  if QSNETLIBS_VERSION_CODE > QSNETLIBS_VERSION(1,5,0)
-#     define LIBELAN_ATOMICS
-#  endif
-
-#endif
-extern void armci_elan_fence(int p);
-#endif
-
-/* we got problems on IA64/Linux64 with Elan if inlining is used */
-#if defined(__GNUC__) && !defined(QUADRICS)
-#   define INLINE inline
-#else
-#   define INLINE
-#endif
+#define INLINE inline
 
 #if HAVE_UNISTD_H
 #   include <unistd.h>
@@ -44,7 +23,7 @@ extern void armci_elan_fence(int p);
 #   define sleep(x) Sleep(100*(x))
 #endif
 
-#if (defined(SYSV) || defined(WIN32)|| defined(MMAP)) && !defined(NO_SHM) && !defined(HITACHI) && !defined(CATAMOUNT)
+#if (defined(SYSV) || defined(WIN32)|| defined(MMAP)) && !defined(NO_SHM)
 #define CLUSTER
 
 #ifdef SERVER_THREAD
@@ -89,7 +68,7 @@ void *ptr;
 } armci_flag_t;
 
 
-#if defined(LAPI) || defined(PTHREADS) || defined(POSIX_THREADS)
+#if defined(PTHREADS) || defined(POSIX_THREADS)
 # include <pthread.h>
   typedef pthread_t thread_id_t;
 # define  THREAD_ID_SELF pthread_self
@@ -110,13 +89,8 @@ extern thread_id_t armci_serv_tid;
 #  define SERVER_CONTEXT (armci_me<0)
 #endif
 
-#if defined(LAPI) || defined(CLUSTER) || defined(CRAY) || defined(CRAY_XT)\
-        || defined(CRAY_SHMEM) || defined(BGML) || defined(DCMF)
+#if defined(CLUSTER) || defined(CRAY) || defined(CRAY_XT) || defined(CRAY_SHMEM)
 #  include "request.h"
-#endif
-
-#ifdef ARMCIX
-#include "armcix.h"
 #endif
 
 /* ------------------------ ARMCI threads support ------------------------- */
@@ -169,8 +143,7 @@ extern INLINE int armci_register_thread(thread_id_t id);
 #   endif
 #endif
 
-#if defined(CRAY_XT) || defined(CRAY_T3E) || defined(FUJITSU)\
-       || defined(HITACHI) || (defined(QUADRICS) && !defined(ELAN_ACC))
+#if defined(CRAY_XT)
 #define ACC_COPY
 #endif
 
@@ -195,17 +168,13 @@ extern INLINE int armci_register_thread(thread_id_t id);
                            EXTRA_MSG_BUFLEN_DBL)
 #endif
 
-#if defined(HITACHI)
-#  define BUFSIZE  ((0x50000) * sizeof(double))
-#else   
-   /* packing algorithm for double complex numbers requires even number */
-#  ifdef MSG_BUFLEN_DBL
-#    define BUFSIZE_DBL (MSG_BUFLEN_DBL - RESERVED_BUFLEN)
-#  else
-#    define BUFSIZE_DBL 32768
-#  endif
-#  define BUFSIZE  (BUFSIZE_DBL * sizeof(double))
+/* packing algorithm for double complex numbers requires even number */
+#ifdef MSG_BUFLEN_DBL
+#  define BUFSIZE_DBL (MSG_BUFLEN_DBL - RESERVED_BUFLEN)
+#else
+#  define BUFSIZE_DBL 32768
 #endif
+#define BUFSIZE  (BUFSIZE_DBL * sizeof(double))
 
 /* note opcodes must be lower than ARMCI_ACC_OFF !!! */
 #define PUT 1
@@ -221,13 +190,8 @@ extern INLINE int armci_register_thread(thread_id_t id);
 
 extern  int armci_me, armci_nproc;
 extern int _armci_initialized;
-#ifdef HITACHI
-   extern int sr8k_server_ready;
-   extern  double *armci_internal_buffer;
-#else
 #if !defined(THREAD_SAFE)
    extern  double armci_internal_buffer[BUFSIZE_DBL];
-#endif
 #endif
 
 extern void armci_shmem_init();
@@ -307,34 +271,18 @@ extern void armci_finalize_fence();
 #else
 #  define FENCE_ARR(p_) (_armci_fence_arr[p_])
 #endif
-
 #  define SAMECLUSNODE(p)\
      ( ((p) <= armci_clus_last) && ((p) >= armci_clus_first) )
-#elif defined(__crayx1)
-#  define SAMECLUSNODE(p) 1
-#elif defined(ARMCIX)
-#  define SAMECLUSNODE(p) 0
 #else
 #  define SAMECLUSNODE(p) ((p)==armci_me) 
 #endif
 
 
-#if defined(LAPI) || defined(ELAN_ACC)
-#  define ORDER(op,proc)\
-        if( proc == armci_me || ( ARMCI_ACC(op) && ARMCI_ACC(PENDING_OPER(proc))) );\
-        else  FENCE_NODE(proc)
-#  define UPDATE_FENCE_INFO(proc_)
-#elif defined(CLUSTER) && !defined(QUADRICS) && !defined(HITACHI)\
-        && !defined(CRAY_SHMEM) && !defined(PORTALS)
-#  define ORDER(op_,proc_)\
-          if(!SAMECLUSNODE(proc_) && op_ != GET )FENCE_ARR(proc_)=1
+#if defined(CLUSTER) && !defined(CRAY_SHMEM)
+#  define ORDER(op_,proc_) if(!SAMECLUSNODE(proc_) && op_ != GET )FENCE_ARR(proc_)=1
 #  define UPDATE_FENCE_INFO(proc_) if(!SAMECLUSNODE(proc_))FENCE_ARR(proc_)=1
 #else
-#  if defined(GM) && defined(ACK_FENCE) 
-#   define ORDER(op,proc)
-#  else
-#   define ORDER(op,proc) if(proc != armci_me) FENCE_NODE(proc)
-#  endif 
+#  define ORDER(op,proc) if(proc != armci_me) FENCE_NODE(proc)
 #  define UPDATE_FENCE_INFO(proc_)
 #endif
         
@@ -349,7 +297,7 @@ typedef struct {
  *  to establish socket communication like on the networks of workstations
  *  SP node names must be distinct within first HOSTNAME_LEN characters
 \*/
-#if defined(LAPI) && defined(AIX)
+#if defined(AIX)
 #  define HOSTNAME_TRUNCATE 
 #  define HOSTNAME_LEN 12
 #else
@@ -443,9 +391,6 @@ extern void armci_global_region_exchange(void *, long);
 
 /* -------------------- ARMCI Groups ---------------------- */
 /* data structure that caches a group's attribute */
-#ifdef BGML
-#define   PCLASS 3
-#endif
 #ifdef MSG_COMMS_MPI
 
 typedef int ARMCI_Datatype;
@@ -504,13 +449,5 @@ extern void armci_icheckpoint_finalize(int rid);
 
 #endif /* ifdef ENABLE_CHECKPOINT */
 /* -------------------------------------------------------- */
-
-#ifdef BGML     
-#define ARMCI_CRITICAL_SECTION_ENTER() BGML_CriticalSection_enter();
-#define ARMCI_CRITICAL_SECTION_EXIT()  BGML_CriticalSection_exit();
-#else
-#define ARMCI_CRITICAL_SECTION_ENTER()
-#define ARMCI_CRITICAL_SECTION_EXIT()     
-#endif    
 
 #endif

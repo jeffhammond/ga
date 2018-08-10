@@ -7,18 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef SEQUENT
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #include "sndrcvP.h"
 #include "defglobals.h"
 
-#if defined(ALLIANT) || defined(ENCORE) || defined(SEQUENT)|| defined(AIX)  \
-                     || defined(CONVEX) || defined(ARDENT) || defined(ULTRIX) \
-                     || defined(NEXT)
+#if defined(AIX)
 extern char *strdup();
 extern char *strtok();
 #endif

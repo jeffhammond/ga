@@ -7,28 +7,15 @@
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
-#ifdef SEQUENT
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 #include <sys/types.h>
 #include <sys/time.h>
-#if defined(CONVEX) && defined(HPUX)
-#include <sys/cnx_types.h>
-#endif
-#if defined(SUN) || defined(ALLIANT) || defined(ENCORE) || defined(SEQUENT) \
-                 || defined(CONVEX)  || defined(AIX)    || defined(NEXT) \
-                 || defined(LINUX)
+#if defined(AIX) || defined(LINUX)
 #include <sys/wait.h>
 #endif
 
 #if defined(SHMEM) || defined(SYSV)
-#   if (defined(SGI_N32) || defined(SGITFP))
-#       define PARTIALSPIN
-#   else
-#       define NOSPIN
-#   endif
+#   define NOSPIN
 #endif
 
 #if defined(SOLARIS)
@@ -56,25 +43,10 @@ extern void exit();
 extern void InitClusInfoNotParallel();
 extern int WaitAll(long nchild);
 
-#if defined(ALLIANT) || defined(ENCORE) || defined(SEQUENT) || \
-    defined(CONVEX)  || defined(ARDENT) || defined(ULTRIX) || defined(AIX) || \
-    defined(NEXT)    || defined(DECOSF)
-extern char *strdup();
-#endif
-
 #define max(A, B) ( (A) > (B) ? (A) : (B) )
 #define min(A, B) ( (A) < (B) ? (A) : (B) )
 
-#if defined(ULTRIX) || defined(SGI) || defined(NEXT) || defined(HPUX) || \
-    defined(KSR)    || defined(DECOSF)
-extern void *malloc();
-#else
 #include <stdlib.h>
-#endif
-
-#ifdef IPSC
-#define bzero(A,N) memset((A), 0, (N))
-#endif
 
 static int SR_initialized=0;
 long TCGREADY_()
@@ -235,11 +207,7 @@ void tcgi_pbegin(argc, argv)
 
   if (SR_clus_id != 0)
     (void) fclose(stdin);
-#ifdef SPARC64_GP
-  for (i=3; i<62; i++)
-#else
   for (i=3; i<64; i++)
-#endif
     (void) close((int) i);
 
   /* Connect to the master process which will have process id
@@ -348,15 +316,6 @@ void tcgi_pbegin(argc, argv)
       
 #if defined(NOSPIN)
     SR_proc_info[me].semid = SemSetCreate((long) 3*nslave, (long) 0);
-#else
-#ifdef KSR_NATIVE
-    /* Bind myself to a processor */
-    KSR_BindProcess(0);
-    if (DEBUG_) {
-      (void) printf("pbegin: bound master process\n");
-      (void) fflush(stdout);
-    }
-#endif
 #endif
 
 #if defined(SOLARIS) 
@@ -382,33 +341,13 @@ void tcgi_pbegin(argc, argv)
   	(void) printf("pbegin: %ld fork process, i=%ld\n", NODEID_(), nslave);
   	(void) fflush(stdout);
       }
-#if   defined(CONVEX) && defined(HPUX)
-      status=i/8; /* on SPP-1200 there are eight processors per hypernode */
-      status = cnx_sc_fork(CNX_INHERIT_SC,status);
-#else
       status = fork();
-#endif
       if (status < 0)
         Error("pbegin: error forking process",status);
       else if (status == 0) {
 
 	/* Child process */
 	me = SR_proc_id += i;               /* change process id */
-
-#ifdef KSR_NATIVE
-	/* Bind myself to a processor */
-	KSR_BindProcess(me);
-	if (DEBUG_) {
-	  (void) printf("pbegin: bound slave process %ld\n", NODEID_());
-	  (void) fflush(stdout);
-	}
-#endif
-
-#if defined(SOLARIS)
-	/*printf("binding slave process %d to processor %d\n", getpid(), 31-i);
-	if (processor_bind(P_PID, P_MYID, 31-i, (void *) NULL))
-	printf("binding to %d failed\n", 31-i); */
-#endif
 
 	/* Tidy up files */
 	if (SR_clus_id == 0)                /* if not 0 is shut already */
@@ -431,14 +370,10 @@ void tcgi_pbegin(argc, argv)
       SR_proc_info[i].shmem = SR_proc_info[masterid].shmem;
       SR_proc_info[i].shmem_size = SR_proc_info[masterid].shmem_size;
       SR_proc_info[i].shmem_id = SR_proc_info[masterid].shmem_id;
-#ifndef KSR_NATIVE
-      SR_proc_info[i].header = (MessageHeader *)
-	(SR_proc_info[i].shmem + slaveid * SHMEM_BUF_SIZE);
+      SR_proc_info[i].header = (MessageHeader *) (SR_proc_info[i].shmem + slaveid * SHMEM_BUF_SIZE);
 /*      SR_proc_info[i].header->nodeto = -1; */
-      SR_proc_info[i].buffer = ((char *) SR_proc_info[i].header) + 
-	sizeof(MessageHeader) + (sizeof(MessageHeader) % 8);
-      SR_proc_info[i].buflen = SHMEM_BUF_SIZE - sizeof(MessageHeader) -
-	(sizeof(MessageHeader) % 8);
+      SR_proc_info[i].buffer = ((char *) SR_proc_info[i].header) + sizeof(MessageHeader) + (sizeof(MessageHeader) % 8);
+      SR_proc_info[i].buflen = SHMEM_BUF_SIZE - sizeof(MessageHeader) - (sizeof(MessageHeader) % 8);
 #ifdef NOSPIN
       SR_proc_info[i].semid = SR_proc_info[masterid].semid;
       SR_proc_info[i].sem_pend = 3*slaveid;
@@ -449,33 +384,12 @@ void tcgi_pbegin(argc, argv)
 #endif
       SR_proc_info[i].buffer_full = flags + slaveid;
 /*      *SR_proc_info[i].buffer_full = FALSE;*/
-#endif
     }
 
-#ifdef KSR_NATIVE
-    /* Map the data structures onto the shared memory */
-    KSR_MapBufferSpace(masterid, nslave);
-    if (DEBUG_) {
-      (void) printf("pbegin: %2ld: Mapped buffer space\n", NODEID_());
-      (void) fflush(stdout);
-    }
-#else
     /* Post read semaphore to make sends partially asynchronous */
-    
 #ifdef NOSPIN
     SemPost(SR_proc_info[me].semid, SR_proc_info[me].sem_read);
 #endif
-#endif
-
-#ifdef KSR_NATIVE
-    /* Initialize the buffer space data structures */
-    KSR_InitBufferSpace();
-    if (DEBUG_) {
-      (void) printf("pbegin: %2ld: Initialized buffer space\n", NODEID_());
-      (void) fflush(stdout);
-    }
-#endif
-
   }
 
 #else

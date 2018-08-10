@@ -6,11 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef SEQUENT
-#include <strings.h>
-#else
 #include <string.h>
-#endif
 
 #ifdef AIX
 #include <sys/select.h>
@@ -20,15 +16,7 @@
 #include <sys/time.h>
 
 #if defined(SHMEM) || defined(SYSV)
-#   if (defined(SGI_N32) || defined(SGITFP))
-#       define PARTIALSPIN
-#   else
-#       define NOSPIN
-#   endif
-#endif
-
-#if (defined(SUN) && !defined(SOLARIS))
-    extern char *sprintf();
+#   define NOSPIN
 #endif
 
 extern void Error();
@@ -42,9 +30,7 @@ extern void Error();
 #endif
 
 #if defined(SHMEM) || defined(SYSV)
-#if !defined(SEQUENT) && !defined(CONVEX)
 #include <memory.h>
-#endif
 #include "sema.h"
 #include "tcgshmem.h"
 #if defined(USE_SRMOVER)
@@ -126,10 +112,6 @@ static int DummyRoutine()
 static long flag(p)
      long *p;
 {
-#if defined(CONVEX) && defined(HPUX)
-  asm("sync");
-#endif
-
   return *p;
 }
 
@@ -246,10 +228,6 @@ static void rcv_local(type, buf, lenbuf, lenmes, nodeselect, nodefrom)
   SemPost(semid, sem_read);
 #else
   *buffer_full = FALSE;
-# if defined(CONVEX) && defined(HPUX)
-     asm("sync");
-# endif
-
 #endif
 
   len -= buflen;
@@ -322,9 +300,6 @@ static void snd_local(type, buf, lenbuf, node)
   head->length = *lenbuf;
   head->tag = tag;
   head->nodeto = (char) *node;
-#if defined(CONVEX) && defined(HPUX)
-  asm("sync");
-#endif
 
   if (DEBUG_) {
     PrintMessageHeader("snd_local ",head);
@@ -342,9 +317,6 @@ static void snd_local(type, buf, lenbuf, node)
   SemPost(semid, sem_written);
 #else
   *buffer_full = TRUE;
-# if defined(CONVEX) && defined(HPUX)
-   asm("sync");
-# endif
 #endif
 #ifdef NOSPIN
   SemPost(semid_to, sem_pend);
@@ -364,9 +336,6 @@ static void snd_local(type, buf, lenbuf, node)
     SemPost(semid, sem_written);
 #else
     *buffer_full = TRUE;
-#   if defined(CONVEX) && defined(HPUX)
-       asm("sync");
-#   endif
 #endif
     len -= buflen;
     buf += buflen;
@@ -535,11 +504,7 @@ void SND_(type, buf, lenbuf, node, sync)
 
 #if defined(SHMEM) || defined(SYSV)
   if (SR_proc_info[*node].local){
-#ifdef KSR_NATIVE
-    KSR_snd_local(type, buf, lenbuf, node);
-#else
     snd_local(type, buf, lenbuf, node);
-#endif
   } else {
 #endif
       snd_remote(type, buf, lenbuf, node);
@@ -625,11 +590,7 @@ static long NextReadyNode(type)
       else if (SR_proc_info[next_node].local) {
 	/* Look for local message */
 
-#ifdef KSR_NATIVE
-	if (KSR_MatchMessage(next_node, me, type))
-#else
 	if (MatchMessage(SR_proc_info[next_node].header, me, type))
-#endif
 	  break;
       }
       else if (SR_proc_info[next_node].sock >= 0) {
@@ -723,11 +684,7 @@ long PROBE_(type, node)
     else if (SR_proc_info[i].local) {
       /* Look for local message */
       
-#ifdef KSR_NATIVE
-      if (KSR_MatchMessage(i, me, type))
-#else
       if (MatchMessage(SR_proc_info[i].header, me, *type))
-#endif
 	break;
     }
     else if (SR_proc_info[i].sock >= 0) {
@@ -957,11 +914,7 @@ void RCV_(type, buf, lenbuf, lenmes, nodeselect, nodefrom, sync)
 
 #if defined(SHMEM) || defined(SYSV)
   if (SR_proc_info[node].local){
-#ifdef KSR_NATIVE
-    KSR_rcv_local(type, buf, lenbuf, lenmes, &node, nodefrom);
-#else
     rcv_local(type, buf, lenbuf, lenmes, &node, nodefrom);
-#endif
   } else {
 #endif
       rcv_remote(type, buf, lenbuf, lenmes, &node, nodefrom);

@@ -88,10 +88,6 @@ static  int logpagesize=0;
 static long max_alloc_munmap=MAX_ALLOC_MUNMAP;
 #endif
 
-#if defined(SUN)
-  extern char *shmat();
-#endif
-
 #define SHM_UNIT (1024)
 
 
@@ -102,42 +98,24 @@ static long max_alloc_munmap=MAX_ALLOC_MUNMAP;
  *    case b) search w/o forking until success (less accurate)
  */
 
-/* under Myrinet GM, we cannot fork */
-#if defined(GM) || defined(VAPI)
+#if defined(VAPI)
 #   define SHMMAX_SEARCH_NO_FORK 
 #endif
-#if defined(LAPI) || defined(AIX) || defined(SHMMAX_SEARCH_NO_FORK)
+#if defined(AIX) || defined(SHMMAX_SEARCH_NO_FORK)
 #   define NO_SHMMAX_SEARCH
 #endif
 
 /* on some platforms with tiny shmmax can try to glue multiple regions */
-#if (defined(SUN) || defined(SOLARIS)) && !defined(SHMMAX_SEARCH_NO_FORK)
+#if !defined(SHMMAX_SEARCH_NO_FORK)
 #    define MULTIPLE_REGIONS
 #endif
 
 /* Limits for the largest shmem segment are in Kilobytes to avoid passing
  * Gigavalues to kr_malloc
- * the limit for the KSR is lower than SHMMAX in sys/param.h because
- * shmat would fail -- SHMMAX cannot be trusted (a bug)
  */
 #define _SHMMAX 4*1024
 
-#if defined(SUN)||defined(SOLARIS)
-#  undef _SHMMAX
-#  define _SHMMAX (1024)  /* memory in KB */
-#elif defined(SGI64) || defined(AIX) || defined(CONVEX)
-#  undef _SHMMAX
-#  define _SHMMAX ((unsigned long)512*1024)
-#elif defined(SGI) && !defined(SGI64)
-#  undef _SHMMAX
-#  define _SHMMAX ((unsigned long)128*1024)
-#elif defined(KSR)
-#  undef _SHMMAX
-#  define _SHMMAX ((unsigned long)512*1024)
-#elif defined(HPUX)
-#  undef _SHMMAX
-#  define _SHMMAX ((unsigned long)64*1024)
-#elif defined(__FreeBSD__)
+#if defined(__FreeBSD__)
 #  undef _SHMMAX
 #  define _SHMMAX ((unsigned long)3*1024)
 #elif defined(LINUX) 
@@ -145,10 +123,7 @@ static long max_alloc_munmap=MAX_ALLOC_MUNMAP;
 #     undef _SHMMAX
 #     if defined(__sparc__) || defined(__powerpc__) 
 #       define _SHMMAX ((unsigned long)16*1024)
-#     elif defined(__alpha__)
-#       define _SHMMAX ((unsigned long)4072)
 #     else
-        /* Intel */
 #       define _SHMMAX ((unsigned long)32*1024)
 #     endif
 #  endif
@@ -173,31 +148,13 @@ static  int id_search_no_fork=0;
 
 #ifdef LINUX
 #define CLEANUP_CMD(command) sprintf(command,"/usr/bin/ipcrm shm %d",id);
-#elif  defined(SOLARIS) 
-#define CLEANUP_CMD(command) sprintf(command,"/bin/ipcrm -m %d",id);
-#elif  defined(SGI) 
-#define CLEANUP_CMD(command) sprintf(command,"/usr/sbin/ipcrm -m %d",id);
 #else
 #define CLEANUP_CMD(command) sprintf(command,"/usr/bin/ipcrm -m %d",id);
 #endif
 
 
 #ifdef   ALLOC_MUNMAP
-#ifdef QUADRICS
-#  include <elan/elan.h>
-#  include <elan3/elan3.h>
-   static  char *armci_elan_starting_address = (char*)0;
-
-#  ifdef __ia64__
-#    define ALLOC_MUNMAP_ALIGN 1024*1024
-#  else
-#    define ALLOC_MUNMAP_ALIGN 64*1024
-#  endif
-
-#  define ALGN_MALLOC(s,a) elan_allocMain(elan_base->state, (a), (s))
-#else 
-#  define ALGN_MALLOC(s,a) malloc((s))
-#endif
+#define ALGN_MALLOC(s,a) malloc((s))
 
 static char* alloc_munmap(size_t size)
 {
@@ -310,11 +267,7 @@ static int armci_shmalloc_try(long size)
  */
 #define PAGE (16*65536L)
 #define LBOUND  1048576L
-#if defined(MULTI_CTX) && defined(QUADRICS)
-#define UBOUND 256*LBOUND
-#else
 #define UBOUND 512*LBOUND
-#endif
 
 #define ARMCI_STRINGIFY(str) #str
 #define ARMCI_CONCAT(str) strL
@@ -422,23 +375,6 @@ long lower_bound=_SHMMAX*SHM_UNIT;
 #endif
 
 
-#ifdef MULTI_CTX
-void armci_nattach_preallocate_info(int* segments, int *segsize)
-{
-     int x;
-     char *uval;
-     uval = getenv("LIBELAN_NATTACH");
-     if(uval != NULL){
-        sscanf(uval,"%d",&x);
-        if(x<2 || x>8) armci_die("Error in LIBELAN_NATTACH <8, >1 ",(int)x);
-     }else
-        armci_die("Inconsistent configuration: ARMCI needs LIBELAN_NATTACH",0);
-     *segments =x;
-     *segsize = (int) (SHM_UNIT * MinShmem);
-
-}
-#endif
-        
 /* Create shared region to store kr_malloc context in shared memory */
 void armci_krmalloc_init_ctxshmem() {
     void *myptr=NULL;
@@ -490,59 +426,6 @@ void armci_krmalloc_init_ctxshmem() {
 
 void armci_shmem_init()
 {
-
-#ifdef ALLOC_MUNMAP
-
-#if defined(QUADRICS) 
-#   if (defined(__ia64__) || defined(__alpha)) && !defined(DECOSF) 
-
-      /* this is to determine size of Elan Main memory allocator for munmap */
-      long x;
-      char *uval;
-      uval = getenv("LIBELAN_ALLOC_SIZE");
-      if(uval != NULL){
-        sscanf(uval,"%ld",&x);
-        if((x>80000000) && (x< 4*1024*1024*1024L)){ 
-          max_alloc_munmap = (x>>20) - 72;
-          if(DEBUG_){
-            printf("%d: max_alloc_munmap is %ld\n",armci_me,max_alloc_munmap);
-            fflush(stdout);
-          }
-        }
-      }
-
-      /* an alternative approach is to use MMAP area where we get
-         the address from the Elan environment variable in qsnetlibs 1.4+  */
-      uval = getenv("LIBELAN3_MMAPBASE");
-      if(uval != NULL){
-         sscanf(uval,"%p",&armci_elan_starting_address);
-      }
-
-#   endif
-#   if defined(__ia64__)
-       /* need aligment on 1MB boundary rather than the actual pagesize */
-       pagesize = 1024*1024;
-       logpagesize = 20;
-#   else
-       /* determine log2(pagesize) needed for address alignment */
-       int tp=512;
-       logpagesize = 9;
-       pagesize = getpagesize();
-       if(tp>pagesize)armci_die("armci_shmem_init:pagesize",pagesize);
-
-       while(tp<pagesize){
-         tp <<= 1;
-         logpagesize++;
-       }
-       if(tp!=pagesize)armci_die("armci_shmem_init:pagesize pow 2",pagesize);
-#   endif
-
-   if(DEBUG_) {
-     printf("page size =%d log=%d\n",pagesize,logpagesize); fflush(stdout); }
-
-#endif
-#endif
-
    if(armci_me == armci_master){
 #if !defined(NO_SHMMAX_SEARCH) || defined(SHMMAX_SEARCH_NO_FORK)
 #       ifdef SHMMAX_SEARCH_NO_FORK
@@ -649,15 +532,13 @@ static long occup_blocks=0;
 
 #if defined(MULTIPLE_REGIONS)
 /********************************* MULTIPLE_REGIONS *******************/
-/* allocate contiguous shmem -- glue pieces together -- works on SUN 
- * SUN max shmem segment is only 1MB so we might need several to satisfy request
- */
+/* allocate contiguous shmem -- glue pieces together */
 
 
 /* SHM_OP is an operator to calculate shmem address to attach 
  * might be + or - depending on the system 
  */
-#if defined(DECOSF) || defined(LINUX)
+#if defined(LINUX)
 #define SHM_OP +
 #else
 #define SHM_OP -
@@ -998,10 +879,6 @@ char *Attach_Shared_Region(id, size, offset)
 int reg, found, shmflag=0;
 static char *temp;
 
-#if defined(SGI_N32) && defined(SHM_SGI_ANYADDR)
-  shmflag= SHM_SGI_ANYADDR;
-#endif
-  
   if(alloc_regions>=MAX_REGIONS)
        armci_die("Attach_Shared_Region: to many regions ",0);
 
@@ -1097,10 +974,6 @@ size_t sz = (size_t)size;
 #else
        char *pref_addr = (char*)0;
 #endif
-#if defined(SGI_N32) && defined(SHM_SGI_ANYADDR)
-  shmflag= SHM_SGI_ANYADDR;
-#endif
-
     if(DEBUG1){
        printf("%d:allocate: Shmem allocate size %ld bytes\n",armci_me,size); 
        fflush(stdout);
@@ -1136,7 +1009,7 @@ size_t sz = (size_t)size;
          printf("%d:allocate:attach:id=%d paddr=%p size=%ld\n",armci_me,id,temp,size);
          fflush(stdout);
        }
-#if !defined(AIX) && !defined(HPUX64)
+#if !defined(AIX)
        /* delete segment id so that OS cleans it when all attached processes are gone */
        if(shmctl( id, IPC_RMID, (struct shmid_ds *)NULL))
           fprintf(stderr,"failed to remove shm id=%d\n",id);

@@ -49,10 +49,7 @@ void DeleteLocks(lockset_t lockid) {
 
 void CreateInitLocks(int num_locks, lockset_t *plockid)
 {
-int locks_per_proc, size;
-#ifdef BGML
-  fprintf(stderr,"createinitlocks\n");
-#endif
+  int locks_per_proc, size;
   ptr_arr = (void**)malloc(armci_nproc*sizeof(void*));
   locks_per_proc = (num_locks*armci_nclus)/armci_nproc + 1;
   size=locks_per_proc*sizeof(PAD_LOCK_T);
@@ -104,78 +101,6 @@ void DeleteLocks(lockset_t lockid)
 }
 #endif
 
-
-/********************* all SGI systems ****************/
-#elif defined(SGI)
-#define FILE_LEN 200
-lockset_t lockset;
-static char arena_name[FILE_LEN];
-usptr_t *arena_ptr;
-static int avail =0;
-
-extern char *getenv(const char *);
-
-void CreateInitLocks(int num_locks, lockset_t *lockid)
-{
-int i;
-char *tmp;
-
-   if(num_locks > NUM_LOCKS) armci_die("To many locks requested", num_locks);
-   lockset.id = (int)getpid();
-   if (!(tmp = getenv("ARENA_DIR"))) tmp = "/tmp";
-   sprintf(arena_name,"%s/armci_arena%d.%ld", tmp,armci_clus_me,lockset.id);
-
-  (void) usconfig(CONF_ARENATYPE, US_GENERAL);
-  (void) usconfig(CONF_INITUSERS, (unsigned int)
-                  armci_clus_info[armci_clus_me].nslave+1); /* +1 for server */
-   arena_ptr = usinit(arena_name);    
-   if(!arena_ptr) armci_die("Failed to Create Arena", 0);
- 
-   for(i=0; i<num_locks; i++){
-       lockset.lock_array[i] = usnewlock(arena_ptr); 
-       if(lockset.lock_array[i] == NULL) armci_die("Failed to Create Lock", i);
-   }
-
-   *lockid = lockset;
-   avail = 1;
-}   
-   
-
-void InitLocks(int num_locks, lockset_t lockid)
-{
-int i;
-char *tmp;
-
-/*   if(avail) armci_die("Arena already attached", avail); */
-   lockset = lockid;
-   if (!(tmp = getenv("ARENA_DIR"))) tmp = "/tmp";
-   sprintf(arena_name,"%s/armci_arena%d.%ld", tmp,armci_clus_me,lockset.id);
-
-   (void) usconfig(CONF_ARENATYPE, US_GENERAL);
-   arena_ptr = usinit(arena_name);
-   if(!arena_ptr) armci_die("Failed to Attach to Arena", lockid.id);
-/*   else fprintf(stderr,	"attached arena %x\n",arena_ptr); */
-
-   for(i=0; i<num_locks; i++){
-       if(lockset.lock_array[i] == NULL) armci_die("Failed to Attach Lock", i);
-   }
-   avail = 1;
-}   
-
-
-void DeleteLocks(lockset_t lockid)
-{
- /*  fprintf(stderr,	"deleting arena %x\n",arena_ptr);*/
-  if(!avail)return;
-  else avail = 0;
-  usdetach (arena_ptr);
-  arena_ptr = 0;
-  (void)unlink(arena_name); /*ignore armci_die code:file might be already gone*/
-}
-
-
-/***************** Convex/HP Exemplar ****************/
-#elif defined(CONVEX)
 #include <sys/param.h>
 #include <sys/file.h>
 #include <sys/cnx_mman.h>
@@ -314,29 +239,6 @@ void unsetlock(int mutex)
     if(ReleaseMutex(mutex_arr[mutex])==FALSE)armci_die("unsetlock: failed",mutex);
 }
 
-
-#elif defined(CRAY_YMP)
-
-lock_t  cri_l[NUM_LOCKS];
-#pragma  _CRI common cri_l
-
-void CreateInitLocks(int num_locks, lockset_t  *lockid)
-{
-   int i;
-   if(num_locks > NUM_LOCKS) armci_die("To many locks requested", num_locks);
-
-   for(i=0;i<num_locks;i++)cri_l[i]=0;
-}
-
-
-void InitLocks(int num_locks, lockset_t lockid)
-{
-}
-
-
-void DeleteLocks(lockset_t lockid)
-{
-}
 
 #else
 /*********************** every thing else *************************/

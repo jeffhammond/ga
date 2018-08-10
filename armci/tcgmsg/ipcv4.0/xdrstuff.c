@@ -9,26 +9,10 @@
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 
+#include <stdlib.h>
+
 #ifdef CRAY
 extern bool_t xdr_char();
-extern char *malloc();
-#define NULL 0
-#endif
-
-#ifdef SEQUENT
-static bool_t xdr_char();  /* below from sun distribution tape */
-#define NULL 0
-#endif
-
-#ifdef HPUX
-#define NULL 0
-#endif
-
-#if defined(ULTRIX) || defined(SGI) || defined(NEXT) || defined(HPUX)|| \
-    defined(AIX) || defined(KSR) || defined(DECOSF)
-extern void *malloc();
-#else
-extern char *malloc();
 #endif
 
 #define XDR_BUF_LEN 4096        /* Size of XDR buffer in bytes */
@@ -392,25 +376,6 @@ int ReadXdrChar(sock, x, n_char)
 
   return nb;
 }
-
-#ifdef SEQUENT
-/*
- * XDR a char
- */
-static bool_t xdr_char(xdrs, cp)
-        XDR *xdrs;
-        char *cp;
-{
-        int i;
-
-        i = (*cp);
-        if (!xdr_int(xdrs, &i)) {
-                return (FALSE);
-        }
-        *cp = i;
-        return (TRUE);
-}
-#endif
 
 #else
 /* dummy function to make this source file legitimate */

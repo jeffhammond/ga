@@ -5,22 +5,10 @@
 /* $Header: /tmp/hpctools/ga/tcgmsg/ipcv4.0/pfilecopy.c,v 1.9 2004-05-07 20:45:10 pollack Exp $ */
 
 #include <stdio.h>
-#ifdef SEQUENT
-#include <strings.h>
-#else
+#include <stdlib.h>
 #include <string.h>
-#endif
 #include "sndrcv.h"
 #include "msgtypesc.h"
-
-#if defined(ULTRIX) || defined(SGI) || defined(NEXT) || defined(HPUX) || \
-    defined(KSR)    || defined(DECOSF)
-extern void *malloc();
-#else
-extern void *malloc();
-#endif
-
-extern void free();
 
 void tcgi_pfilecopy(type, node0, filename)
      long *type, *node0;
@@ -115,48 +103,12 @@ void PFILECOPY_(type, node0, filename)
     tcgi_pfilecopy(type, node0, filename);
 }
 
-#ifdef IPSC
-#define bcopy(a, b, n) memcpy((b), (a), (n))
-#endif
-
-#ifdef CRAY
-#include <fortran.h>
-#endif
-#ifdef ARDENT
-struct char_desc {
-  char *string;
-  int len;
-};
-#endif
-
-/* This crap because FORTRAN has no standard for passing strings */
-
-#ifdef ARDENT
-void PFCOPY_(type, node0, arg)
-     long *type;
-     long *node0;
-     struct char_desc *arg;
-{
-  char *fname = arg->string;
-  int   len = arg->len;
-#endif
-#ifdef CRAY
-void PFCOPY_(type, node0, arg)
-     long *type;
-     long *node0;
-     _fcd arg;
-{
-  char *fname = _fcdtocp(arg);
-  int len = _fcdlen(arg);
-#endif
-#if !defined(ARDENT) && !defined(CRAY)
 void PFCOPY_(type, node0, fname, len)
   long *type;
   long *node0;
   char *fname;
   int   len;
 {
-#endif
 
   /* Fortran wrapper around pfilecopy */
 

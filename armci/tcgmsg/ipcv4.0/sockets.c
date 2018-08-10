@@ -9,25 +9,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifdef SEQUENT
-#include <strings.h>
-#else
 #include <string.h>
-#endif
-#if defined(SUN) || defined(ALLIANT) || defined(ENCORE) || \
-                    defined(SEQUENT) || defined(AIX)    || \
-                    defined(NEXT)    || defined(LINUX)
+#if defined(AIX) || defined(LINUX)
 #include <sys/wait.h>
 #endif
 
 #ifdef AIX
 #include <sys/select.h>
 #endif
-#ifdef CONVEX
-#include <errno.h>
-#else
 #include <sys/errno.h>
-#endif
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -133,11 +123,6 @@ void TcpNoDelay(sock)
   struct protoent *proto = getprotobyname("tcp");
 #else
   struct protoent *proto = getprotobyname("TCP");
-#endif
-
-#if defined(APOLLO)
-  if (value)
-    return;
 #endif
 
   if (proto == (struct protoent *) NULL)
@@ -267,9 +252,7 @@ void CreateSocketAndBind(sock, port)
   if(setsockopt(*sock, SOL_SOCKET, SO_SNDBUF, (char *) &size, sizeof size))
     Error("CreateSocketAndBind: error setting SO_SNDBUF", (long) size);
 
-#ifndef ARDENT
   TcpNoDelay(*sock);
-#endif
 
   /* Name socket with wildcards */
 
@@ -367,9 +350,7 @@ againacc:
   if(setsockopt(msgsock, SOL_SOCKET, SO_SNDBUF, (char *) &size, sizeof size))
     Error("ListenAndAccept: error setting SO_SNDBUF", (long) size);
 
-#ifndef ARDENT
   TcpNoDelay(msgsock);
-#endif
 
   (void) close(sock); /* will not be needing this again */
   return msgsock;
@@ -445,9 +426,7 @@ againacc:
   if(setsockopt(msgsock, SOL_SOCKET, SO_SNDBUF, (char *) &size, sizeof size))
     Error("ListenAndAccept: error setting SO_SNDBUF", (long) size);
 
-#ifndef ARDENT
   TcpNoDelay(msgsock);
-#endif
 
   (void) close(sock); /* will not be needing this again */
   return msgsock;
@@ -502,9 +481,7 @@ int CreateSocketAndConnect(hostname, cport)
   if(setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char *) &size, sizeof size))
     Error("CreateSocketAndConnect: error setting SO_SNDBUF", (long) size);
 
-#ifndef ARDENT
   TcpNoDelay(sock);
-#endif
 
   /* Connect socket */
 
