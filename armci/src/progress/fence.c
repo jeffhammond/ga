@@ -89,12 +89,6 @@ void PARMCI_AllFence()
     ARMCIX_AllFence ();
 #elif defined(BGML)
     BGML_WaitAll();
-#elif defined(LAPI) || defined(CLUSTER)
-    int p;
-
-    for(p = 0;p < armci_nproc; p++) {
-        PARMCI_Fence(p); 
-    }
 #endif
     MEM_FENCE;
 }

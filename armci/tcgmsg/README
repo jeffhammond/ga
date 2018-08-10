@@ -167,40 +167,6 @@ Installing TCGSMG
 
   a) Existing ports
 
-     Meaning of status field
-
-     . - tested and fully functional
-     s - tested but O/S does not support shared memory -> sockets only
-     x - tested but O/S does not support XDR -> no data conversion
-     ? - not tested recently but is supposed to work
-     ! - known problems
-
-
-  Status   Machine     Description
-  ------   -------     -----------
-  .        SUN         Sun workstation running Sun O/S 4.0 or above
-  .        KSR         Kendall Square Research KSR-1
-  .        DEC         DecStation running ULTRIX
-  .        DECOSF      DEC Alpha running OSF (must use 8 byte FORTRAN integers)
-  .        SGI         Silicon Graphics workstation IRIX 4.0
-  .        ALLIANT     Alliant FX/8/80/800/2800 Concentrix 2800 2.2
-  ?        ALLIANTMPP  Alliant MPP system ALPHA VERSION
-  .        ARDENT      Stardent (formerly Ardent) Titan O/S 2.2
-  .        CONVEX      Convex C220 running ConvexOS V8.1
-  .        IBM         IBM R6000 with AIX 3.1 (xlf -qEXTNAME)
-  .        IBMNOEXT    IBM R6000 with AIX 3.1
-  .        HPUX        Hewlett-Packard risc (HP-UX A.B8.05) (f77 +ppu)
-  .        HPUXNOEXT   Hewlett-Packard risc (HP-UX A.B8.05)
-  .        IPSC        Intel iPSC i860 hypercube
-  .        DELTA       Intel/DARPA Touchstone Delta
-  .        PARAGON     Intel Paragon running OSF
-  x        APOLLO      Apollo DN10000, DomainOS Release 10.3 (bsd4.3)
-  s        CRAY        Cray running UNICOS 6.1 or above
-  s        NEXT        NeXT Workstation (OS 2.1) (Absoft f77 -f -N9)
-  s        NEXTNOEXT   NeXT Workstation (OS 2.1) (Absoft f77 -f)
-  ?        ENCORE      Encore running UMAX-4.3
-  !        SEQUENT     Sequent (DYNIX V3.0.14)
-
      In the top-level TCGMSG directory type
 
      make all MACHINE=<your-machine>

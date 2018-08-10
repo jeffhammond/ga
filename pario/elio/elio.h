@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 #define   ELIO_UFS         0    /* Unix filesystem type */
-#define   ELIO_PFS           1    /* PFS Intel parallel filesystem type */
-#define   ELIO_PIOFS         2    /* IBM SP parallel filesystem type */
+#define   ELIO_PFS           1  /* PFS Intel parallel filesystem type */
+#define   ELIO_PIOFS         2  /* IBM SP parallel filesystem type */
 #define   ELIO_PENDING_ERR -44  /* error code for failing elio_(g)open */
 #define   ELIO_SHARED       77
 #define   ELIO_PRIVATE      88

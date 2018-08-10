@@ -35,7 +35,7 @@ int PARMCI_Wait(armci_hdl_t* usr_hdl)
             ARMCI_NB_WAIT(nb_handle->cmpl_info);
             return(success);
         }
-#if defined(LAPI) || defined(ALLOW_PIN) || defined(ARMCIX)
+#if defined(ALLOW_PIN) || defined(ARMCIX)
         if(nb_handle->tag!=0 && nb_handle->bufid==NB_NONE){
             ARMCI_NB_WAIT(nb_handle->cmpl_info);
             return(success);
@@ -144,12 +144,6 @@ int PARMCI_Test(armci_hdl_t *usr_hdl)
             ARMCI_NB_TEST(nb_handle->cmpl_info,&success);
             return(success);
         }
-#ifdef LAPI
-        if(nb_handle->tag!=0 && nb_handle->bufid==NB_NONE){
-            ARMCI_NB_TEST(nb_handle->cmpl_info,&success);
-            return(success);
-        }
-#endif
 #endif
 #ifdef TEST_HANDLE
         TEST_HANDLE(nb_handle->bufid,nb_handle->tag,(&success));
