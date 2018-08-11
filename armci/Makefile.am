@@ -111,22 +111,8 @@ bin_SCRIPTS += tools/armci-config
 CLEANFILES += $(bin_SCRIPTS)
 
 ##############################################################################
-# src-portals
-#
-if ARMCI_NETWORK_PORTALS
-include $(top_srcdir)/src-portals/Makefile.inc
-
-##############################################################################
-# src-gemini
-#
-else # !ARMCI_NETWORK_PORTALS
-if ARMCI_NETWORK_GEMINI
-include $(top_srcdir)/src-gemini/Makefile.inc
-
-##############################################################################
 # src
 #
-else # !ARMCI_NETWORK_GEMINI
 libarmci_la_SOURCES += src/collectives/message.c
 libarmci_la_SOURCES += src/common/aggregate.c
 libarmci_la_SOURCES += src/common/armci.c
@@ -172,14 +158,6 @@ endif
 if ARMCI_NETWORK_CRAY_SHMEM
 AM_CPPFLAGS += -I$(top_srcdir)/src/devices/cray-shmem
 libarmci_la_SOURCES += src/memory/shmalloc.c
-endif
-if ARMCI_NETWORK_LAPI
-AM_CPPFLAGS += -I$(top_srcdir)/src/devices/lapi
-libarmci_la_SOURCES += src/common/async.c
-libarmci_la_SOURCES += src/common/request.c
-libarmci_la_SOURCES += src/devices/lapi/lapi.c
-libarmci_la_SOURCES += src/devices/lapi/lapidefs.h
-libarmci_la_SOURCES += src/memory/buffers.c
 endif
 if ARMCI_NETWORK_MPI_MT
 AM_CPPFLAGS += -I$(top_srcdir)/src/devices/mpi-mt
@@ -266,9 +244,6 @@ include_HEADERS += src/include/gpc.h
 include_HEADERS += src/include/message.h
 
 AM_CPPFLAGS += -I$(top_srcdir)/src/include
-
-endif # ARMCI_NETWORK_GEMINI
-endif # ARMCI_NETWORK_PORTALS
 
 ##############################################################################
 # profiling
@@ -378,10 +353,6 @@ libarmci_la_SOURCES += tcgmsg/ipcv5.0/srftoc.h
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/tcgmsgP.h
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/usleep.c
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/waitall.c
-if ARMCI_NETWORK_LAPI
-libarmci_la_SOURCES += tcgmsg/ipcv5.0/async_send_lapi.c
-libarmci_la_SOURCES += tcgmsg/ipcv5.0/lapi_putget.c
-else
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/async_send.c
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/busy.c
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/error.c
@@ -389,7 +360,6 @@ libarmci_la_SOURCES += tcgmsg/ipcv5.0/nxtval.shm.c
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/pbeginf.c
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/shmem.c
 libarmci_la_SOURCES += tcgmsg/ipcv5.0/synch.c
-endif # ARMCI_NETWORK_LAPI
 
 endif # MSG_COMMS_TCGMSG5
 
