@@ -50,7 +50,7 @@ extern void   WAITCOM_(long *node);
   Miscellaneous routines for internal use only?
 */
 
-extern void Error(char *string, long integer);
+C11NORETURN void Error(char *string, long code) GCCNORETURNATTR;
 extern void MtimeReset();
 extern void PrintProcInfo();
 extern void RemoteConnect(long a, long b, long c);

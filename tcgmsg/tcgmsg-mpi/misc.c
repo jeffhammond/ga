@@ -59,7 +59,7 @@ long NODEID_()
 }
 
 
-void Error(char *string, long code)
+C11NORETURN void Error(char *string, long code) GCCNORETURNATTR
 {
     fprintf(stdout, FMT_INT ": %s " FMT_INT " (%#lx).\n",
             NODEID_(), string, code, (long unsigned int)code);
