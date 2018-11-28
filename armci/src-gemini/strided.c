@@ -145,7 +145,7 @@ static void armci_copy_2D(int op, int proc, void *src_ptr, void *dst_ptr,
 #  define COUNT count
 #endif
 
-#ifdef __crayx1
+#if 0
     int shmem = 1;
 #else
     int shmem = SAMECLUSNODE(proc);
@@ -201,7 +201,7 @@ static void armci_copy_2D(int op, int proc, void *src_ptr, void *dst_ptr,
 }
 
 
-#if (defined(CRAY) && !defined(__crayx1)) || defined(FUJITSU)
+#if defined(CRAY) || defined(FUJITSU)
 #ifdef CRAY
 #  define DAXPY  SAXPY
 #else
@@ -927,7 +927,7 @@ int PARMCI_Get(void *src, void* dst, int bytes, int proc) {
   int rc=0;
 //ARMCI_PROFILE_START_STRIDED(&bytes, 0, proc, ARMCI_PROF_GET);
 
-#ifdef __crayx1
+#if 0
   memcpy(dst,src,bytes);
 #else
   rc = PARMCI_GetS(src, NULL, dst, NULL, &bytes, 0, proc);

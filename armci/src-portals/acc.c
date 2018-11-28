@@ -4,7 +4,7 @@
 
 /* $Id: acc.c,v 1.13 2006-09-13 23:43:36 andriy Exp $ */
 
-#if defined(__crayx1)
+#if 0
 #define MAYBE_RESTRICT restrict
 #else
 #define MAYBE_RESTRICT
@@ -16,10 +16,6 @@ void  L_ACCUMULATE_2D(long* MAYBE_RESTRICT alpha,
         long* MAYBE_RESTRICT b, int* MAYBE_RESTRICT ldb)
 {
 int i,j;
-
-#ifdef __crayx1
-#pragma _CRI concurrent
-#endif
 
    for(j=0;j< *cols; j++){
      long * MAYBE_RESTRICT aa = a + j* *lda;

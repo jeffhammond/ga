@@ -368,7 +368,7 @@ void ATR fort_dmult2_(const int*    const restrict n,
 #       define Z_ACCUMULATE_2D     z_accumulate_2d_
 #       define F_ACCUMULATE_2D     f_accumulate_2d_
 #   endif
-#   if defined(CRAY) && !defined(__crayx1)
+#   if defined(CRAY)
 #       undef  D_ACCUMULATE_2D 
 #       define D_ACCUMULATE_2D F77_FUNC_(daxpy_2d,DAXPY_2D)
 #   endif

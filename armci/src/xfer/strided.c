@@ -149,7 +149,7 @@ static void armci_copy_2D(int op, int proc, void *src_ptr, void *dst_ptr,
 #  define COUNT count
 #endif
 
-#ifdef __crayx1
+#if 0
   int shmem = 1;
 #else
   int shmem = SAMECLUSNODE(proc);
@@ -166,7 +166,7 @@ static void armci_copy_2D(int op, int proc, void *src_ptr, void *dst_ptr,
     }else {
             
       if(bytes < THRESH){ /* low-latency copy for small data segments */        
-#if defined(__crayx1)
+#if 0
 	if( !(bytes%sizeof(float)) ) {
 	  float *ps=(float*)src_ptr;
 	  float *pd=(float*)dst_ptr;
@@ -176,7 +176,6 @@ static void armci_copy_2D(int op, int proc, void *src_ptr, void *dst_ptr,
                 
 	  for (j = 0;  j < count;  j++){
 	    int i;
-#pragma _CRI concurrent
 	    for(i=0;i<bytes/sizeof(float);i++) pd[i] = ps[i];
 	    ps += fsstride;
 	    pd += fdstride;
@@ -247,7 +246,7 @@ static void armci_copy_2D(int op, int proc, void *src_ptr, void *dst_ptr,
 }
 
 
-#if (defined(CRAY) && !defined(__crayx1)) || defined(FUJITSU)
+#if defined(CRAY) || defined(FUJITSU)
 #ifdef CRAY
 #  define DAXPY  SAXPY
 #else
@@ -636,7 +635,7 @@ static int _armci_puts(void *src_ptr,
   if(stride_levels <0 || stride_levels > MAX_STRIDE_LEVEL) return FAIL4;
   if(proc<0)return FAIL5;
 
-#ifdef __crayx1
+#if 0
   if(!stride_levels) {
     memcpy(dst_ptr, src_ptr,count[0]);
     return 0;
@@ -1096,7 +1095,7 @@ int PARMCI_Put_flag(void *src, void* dst,int bytes,int *f,int v,int proc) {
 int PARMCI_Get(void *src, void* dst, int bytes, int proc) {
   int rc=0;
   
-#ifdef __crayx1
+#if 0
   memcpy(dst,src,bytes);   
 #else
   rc = PARMCI_GetS(src, NULL, dst, NULL, &bytes, 0, proc);

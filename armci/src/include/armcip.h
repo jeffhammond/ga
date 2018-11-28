@@ -310,7 +310,7 @@ extern void armci_finalize_fence();
 
 #  define SAMECLUSNODE(p)\
      ( ((p) <= armci_clus_last) && ((p) >= armci_clus_first) )
-#elif defined(__crayx1)
+#elif 0
 #  define SAMECLUSNODE(p) 1
 #elif defined(ARMCIX)
 #  define SAMECLUSNODE(p) 0

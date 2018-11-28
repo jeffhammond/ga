@@ -17,7 +17,7 @@
 #endif
  
 
-#if defined(SGI) || defined(FUJITSU) || defined(HPUX) || defined(SOLARIS) || defined (DECOSF) || defined(__ia64__) || defined(__crayx1)
+#if defined(SGI) || defined(FUJITSU) || defined(HPUX) || defined(SOLARIS) || defined (DECOSF) || defined(__ia64__)
 #   define PTR_ALIGN
 #endif
 
@@ -173,8 +173,7 @@
 
 #   include "lapidefs.h"
 
-#elif defined(_CRAYMPP) || defined(QUADRICS) || defined(__crayx1)\
-   || defined(CRAY_SHMEM)
+#elif defined(_CRAYMPP) || defined(QUADRICS) || defined(CRAY_SHMEM)
 #if defined(CRAY) || defined(CRAY_XT)
 #   include <mpp/shmem.h>
 #else
@@ -340,7 +339,7 @@ void ATR dcopy13_(const int*    const restrict rows,
 #   if defined(AIX) || defined(BGML)
 #       define DCOPY2D c_dcopy2d_u_
 #       define DCOPY1D c_dcopy1d_u_
-#   elif defined(LINUX) || defined(__crayx1) || defined(HPUX64) || defined(DECOSF) || defined(CRAY) || defined(WIN32) || defined(HITACHI)
+#   elif defined(LINUX) || defined(HPUX64) || defined(DECOSF) || defined(CRAY) || defined(WIN32) || defined(HITACHI)
 #       define DCOPY2D c_dcopy2d_n_
 #       define DCOPY1D c_dcopy1d_n_
 #   else
@@ -355,7 +354,7 @@ void ATR dcopy13_(const int*    const restrict rows,
 #   if defined(AIX) || defined(BGML)
 #       define DCOPY2D dcopy2d_u_
 #       define DCOPY1D dcopy1d_u_
-#   elif defined(LINUX) || defined(__crayx1) || defined(HPUX64) || defined(DECOSF) || defined(CRAY) || defined(WIN32) || defined(HITACHI)
+#   elif defined(LINUX) || defined(HPUX64) || defined(DECOSF) || defined(CRAY) || defined(WIN32) || defined(HITACHI)
 #       define DCOPY2D dcopy2d_n_
 #       define DCOPY1D dcopy1d_n_
 #   else

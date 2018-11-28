@@ -530,9 +530,6 @@ static void ngai_gets(char *loc_base_ptr, char *prem,int *stride_rem, char *pbuf
 /**
  *  A common routine called by both non-blocking and blocking GA put calls.
  */
-#ifdef __crayx1
-#pragma _CRI inline pnga_locate_region
-#endif
 void ngai_put_common(Integer g_a, 
                    Integer *lo,
                    Integer *hi,
@@ -548,7 +545,7 @@ void ngai_put_common(Integer g_a,
   int num_loops=2; /* 1st loop for remote procs; 2nd loop for local procs */
   Integer n_rstrctd;
   Integer *rank_rstrctd;
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
 #else
   Integer ga_nbhandle;
   int counter=0;
@@ -584,7 +581,7 @@ void ngai_put_common(Integer g_a,
 #endif
 
   if(nbhandle)ga_init_nbhandle(nbhandle);
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   else ga_init_nbhandle(&ga_nbhandle);
 #endif
 
@@ -593,7 +590,7 @@ void ngai_put_common(Integer g_a,
       ENABLE_PROFILE_PUT);
 #endif
 
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   for(loop=0; loop<num_loops; loop++) {
 #endif
     Integer ldrem[MAXDIM];
@@ -603,7 +600,7 @@ void ngai_put_common(Integer g_a,
     while (gai_iterator_next(&it_hdl, &proc, &plo, &phi, &prem, ldrem)) {
 
       /* check if it is local to SMP */
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
       cond = armci_domain_same_id(ARMCI_DOMAIN_SMP,(int)proc);
       if(loop==0) cond = !cond;
       if(cond) {
@@ -636,7 +633,7 @@ void ngai_put_common(Integer g_a,
         /*casting what ganb_get_armci_handle function returns to armci_hdl is 
           very crucial here as on 64 bit platforms, pointer is 64 bits where 
           as temporary is only 32 bits*/ 
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
         /* ARMCI_PutS(pbuf,stride_loc,prem,stride_rem,count,ndim-1,proc); */
         ngai_puts(buf, pbuf,stride_loc,prem,stride_rem,count,ndim-1,proc, field_off, field_size, size);
 #else
@@ -667,7 +664,7 @@ void ngai_put_common(Integer g_a,
     }
 #endif
   }
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   if(!nbhandle) nga_wait_internal(&ga_nbhandle);  
 #endif
 
@@ -924,7 +921,7 @@ void ngai_get_common(Integer g_a,
   int num_loops=2; /* 1st loop for remote procs; 2nd loop for local procs */
   Integer n_rstrctd;
   Integer *rank_rstrctd;
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
 #else
   Integer ga_nbhandle;
   int counter=0;
@@ -958,7 +955,7 @@ void ngai_get_common(Integer g_a,
 #endif
 
   if(nbhandle)ga_init_nbhandle(nbhandle);
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   else ga_init_nbhandle(&ga_nbhandle);
 #endif
 
@@ -967,7 +964,7 @@ void ngai_get_common(Integer g_a,
       ENABLE_PROFILE_GET);
 #endif
 
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   for(loop=0; loop<num_loops; loop++) {
 #endif
     Integer ldrem[MAXDIM];
@@ -977,7 +974,7 @@ void ngai_get_common(Integer g_a,
     while (gai_iterator_next(&it_hdl, &proc, &plo, &phi, &prem, ldrem)) {
 
       /* check if it is local to SMP */
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
       cond = armci_domain_same_id(ARMCI_DOMAIN_SMP,(int)proc);
       if(loop==0) cond = !cond;
       if(cond) {
@@ -1008,7 +1005,7 @@ void ngai_get_common(Integer g_a,
           GAbytes.getloc += (double)size*elems;
         }
 #endif
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
         /*           ARMCI_GetS(prem,stride_rem,pbuf,stride_loc,count,ndim-1,proc); */
         ngai_gets(buf,prem,stride_rem,pbuf,stride_loc,count,ndim-1,proc, field_off, field_size, size);
 #else
@@ -1035,7 +1032,7 @@ void ngai_get_common(Integer g_a,
     }
 #endif
   }
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   if(!nbhandle) nga_wait_internal(&ga_nbhandle);  
 #endif
 
@@ -1095,11 +1092,6 @@ void pnga_nbget_field(Integer g_a, Integer *lo, Integer *hi,Integer foff, Intege
 {
   ngai_get_common(g_a,lo,hi,buf,ld,foff,fsize,nbhandle);
 }
-
-#ifdef __crayx1 
-#  pragma _CRI inline ga_get_
-#  pragma _CRI inline ngai_get_common
-#endif
 
 /**
  *  A common routine called by both non-blocking and blocking GA acc calls.

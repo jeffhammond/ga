@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#if defined(CRAY) && !defined(__crayx1)
+#if defined(CRAY)
 #  include <sys/category.h>
 #  include <sys/resource.h>
 #  include <unistd.h>

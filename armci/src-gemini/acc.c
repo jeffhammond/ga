@@ -4,7 +4,7 @@
 
 /* $Id: acc.c,v 1.13 2006-09-13 23:43:36 andriy Exp $ */
 
-#if defined(__crayx1)
+#if 0
 #else
 #define restrict
 #endif
@@ -14,10 +14,6 @@ void  L_ACCUMULATE_2D(long* restrict alpha, int* restrict rows,
                       int* restrict lda, long* restrict b, int* restrict ldb)
 {
 int i,j;
-
-#ifdef __crayx1
-#pragma _CRI concurrent
-#endif
 
    for(j=0;j< *cols; j++){
      long * restrict aa = a + j* *lda;
