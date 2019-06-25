@@ -199,7 +199,9 @@ void SigSegvHandler(int sig)
 /* error checking */
 #define CHECK_MPI_RETVAL(retval) check_mpi_retval((retval), __FILE__, __LINE__)
 STATIC void check_mpi_retval(int retval, const char *file, int line);
+#if 0
 STATIC const char *str_mpi_retval(int retval);
+#endif
 
 /* server fuctions */
 STATIC void server_send(void *buf, int count, int dest);
@@ -4138,45 +4140,96 @@ STATIC int _set_affinity(int cpu)
 STATIC void check_mpi_retval(int retval, const char *file, int line)
 {
     if (MPI_SUCCESS != retval) {
+#if 0
         const char *msg = str_mpi_retval(retval);
-        fprintf(stderr, "{%d} MPI Error: %s: line %d: %s\n",
-                g_state.rank, file, line, msg);
+#else
+        int resultlen = 0, errorclass = 0;
+        const char msg[MPI_MAX_ERROR_STRING];
+        MPI_Error_class(retval, &errorclass);
+        MPI_Error_string(retval, msg, &resultlen);
+#endif
+        fprintf(stderr, "{%d} MPI Error: %s line %d: %d=%d,%s\n", g_state.rank, file, line, retval, errorclass, msg);
         MPI_Abort(g_state.comm, retval);
     }
 }
 
 
+#if 0
 STATIC const char *str_mpi_retval(int retval)
 {
     const char *msg = NULL;
 
     switch(retval) {
-        case MPI_SUCCESS       : msg = "MPI_SUCCESS"; break;
-        case MPI_ERR_BUFFER    : msg = "MPI_ERR_BUFFER"; break;
-        case MPI_ERR_COUNT     : msg = "MPI_ERR_COUNT"; break;
-        case MPI_ERR_TYPE      : msg = "MPI_ERR_TYPE"; break;
-        case MPI_ERR_TAG       : msg = "MPI_ERR_TAG"; break;
-        case MPI_ERR_COMM      : msg = "MPI_ERR_COMM"; break;
-        case MPI_ERR_RANK      : msg = "MPI_ERR_RANK"; break;
-        case MPI_ERR_ROOT      : msg = "MPI_ERR_ROOT"; break;
-        case MPI_ERR_GROUP     : msg = "MPI_ERR_GROUP"; break;
-        case MPI_ERR_OP        : msg = "MPI_ERR_OP"; break;
-        case MPI_ERR_TOPOLOGY  : msg = "MPI_ERR_TOPOLOGY"; break;
-        case MPI_ERR_DIMS      : msg = "MPI_ERR_DIMS"; break;
-        case MPI_ERR_ARG       : msg = "MPI_ERR_ARG"; break;
-        case MPI_ERR_UNKNOWN   : msg = "MPI_ERR_UNKNOWN"; break;
-        case MPI_ERR_TRUNCATE  : msg = "MPI_ERR_TRUNCATE"; break;
-        case MPI_ERR_OTHER     : msg = "MPI_ERR_OTHER"; break;
-        case MPI_ERR_INTERN    : msg = "MPI_ERR_INTERN"; break;
-        case MPI_ERR_IN_STATUS : msg = "MPI_ERR_IN_STATUS"; break;
-        case MPI_ERR_PENDING   : msg = "MPI_ERR_PENDING"; break;
-        case MPI_ERR_REQUEST   : msg = "MPI_ERR_REQUEST"; break;
-        case MPI_ERR_LASTCODE  : msg = "MPI_ERR_LASTCODE"; break;
-        default                : msg = "DEFAULT"; break;
+        case MPI_SUCCESS                   : msg = "No error"; break;
+        case MPI_ERR_BUFFER                : msg = "Invalid buffer pointer"; break;
+        case MPI_ERR_COUNT                 : msg = "Invalid count argument"; break;
+        case MPI_ERR_TYPE                  : msg = "Invalid datatype argument"; break;
+        case MPI_ERR_TAG                   : msg = "Invalid tag argument"; break;
+        case MPI_ERR_COMM                  : msg = "Invalid communicator"; break;
+        case MPI_ERR_RANK                  : msg = "Invalid rank"; break;
+        case MPI_ERR_REQUEST               : msg = "Invalid request (handle)"; break;
+        case MPI_ERR_ROOT                  : msg = "Invalid root"; break;
+        case MPI_ERR_GROUP                 : msg = "Invalid group"; break;
+        case MPI_ERR_OP                    : msg = "Invalid operation"; break;
+        case MPI_ERR_TOPOLOGY              : msg = "Invalid topology"; break;
+        case MPI_ERR_DIMS                  : msg = "Invalid dimension argument"; break;
+        case MPI_ERR_ARG                   : msg = "Invalid argument of some other kind"; break;
+        case MPI_ERR_UNKNOWN               : msg = "Unknown error"; break;
+        case MPI_ERR_TRUNCATE              : msg = "Message truncated on receive"; break;
+        case MPI_ERR_OTHER                 : msg = "Known error not in this list"; break;
+        case MPI_ERR_INTERN                : msg = "Internal MPI (implementation) error"; break;
+        case MPI_ERR_IN_STATUS             : msg = "Error code is in status"; break;
+        case MPI_ERR_PENDING               : msg = "Pending request"; break;
+        case MPI_ERR_KEYVAL                : msg = "Invalid keyval has been passed"; break;
+        case MPI_ERR_NO_MEM                : msg = "MPI_ALLOC_MEM failed because memory is exhausted"; break;
+        case MPI_ERR_BASE                  : msg = "Invalid base passed to MPI_FREE_MEM"; break;
+#if 0 // unused
+        case MPI_ERR_INFO_KEY              : msg = "Key longer than const MPI_MAX_INFO_KEY"; break;
+        case MPI_ERR_INFO_VALUE            : msg = "Value longer than const MPI_MAX_INFO_VAL"; break;
+        case MPI_ERR_INFO_NOKEY            : msg = "Invalid key passed to MPI_INFO_DELETE"; break;
+        case MPI_ERR_SPAWN                 : msg = "Error in spawning processes"; break;
+        case MPI_ERR_PORT                  : msg = "Invalid port name passed to MPI_COMM_CONNECT"; break;
+        case MPI_ERR_SERVICE               : msg = "Invalid service name passed to MPI_UNPUBLISH_NAME"; break;
+        case MPI_ERR_NAME                  : msg = "Invalid service name passed to MPI_LOOKUP_NAME"; break;
+#endif
+#if 0 // MPI RMA not used in PR port
+        case MPI_ERR_WIN                   : msg = "Invalid win argument"; break;
+        case MPI_ERR_SIZE                  : msg = "Invalid size argument"; break;
+        case MPI_ERR_DISP                  : msg = "Invalid disp argument"; break;
+        case MPI_ERR_INFO                  : msg = "Invalid info argument"; break;
+        case MPI_ERR_LOCKTYPE              : msg = "Invalid locktype argument"; break;
+        case MPI_ERR_ASSERT                : msg = "Invalid assert argument"; break;
+        case MPI_ERR_RMA_CONFLICT          : msg = "Conflicting accesses to window"; break;
+        case MPI_ERR_RMA_SYNC              : msg = "Wrong synchronization of RMA calls"; break;
+        case MPI_ERR_RMA_RANGE             : msg = "Target memory is not part of the window (in the case of a window created with MPI_WIN_CREATE_DYNAMIC, target memory is not attached)"; break;
+        case MPI_ERR_RMA_ATTACH            : msg = "Memory cannot be attached (e.g., because of resource exhaustion)"; break;
+        case MPI_ERR_RMA_SHARED            : msg = "Memory cannot be shared (e.g., some process in the group of the specified communicator cannot expose shared memory)"; break;
+        case MPI_ERR_RMA_FLAVOR            : msg = "Passed window has the wrong flavor for the called function"; break;
+#endif
+        case MPI_ERR_NOT_SAME              : msg = "Collective argument not identical on all processes, or collective routines called in a different order by different processes"; break;
+#if 0 // MPI file I/O not used
+        case MPI_ERR_FILE                  : msg = "Invalid file handle"; break;
+        case MPI_ERR_AMODE                 : msg = "Error related to the amode passed to MPI_FILE_OPEN"; break;
+        case MPI_ERR_UNSUPPORTED_DATAREP   : msg = "Unsupported datarep passed to MPI_FILE_SET_VIEW"; break;
+        case MPI_ERR_UNSUPPORTED_OPERATION : msg = "Unsupported operation, such as seeking on a file which supports sequential access only"; break;
+        case MPI_ERR_NO_SUCH_FILE          : msg = "File does not exist"; break;
+        case MPI_ERR_FILE_EXISTS           : msg = "File exists"; break;
+        case MPI_ERR_BAD_FILE              : msg = "Invalid file name (e.g., path name too long)"; break;
+        case MPI_ERR_ACCESS                : msg = "Permission denied"; break;
+        case MPI_ERR_NO_SPACE              : msg = "Not enough space"; break;
+        case MPI_ERR_QUOTA                 : msg = "Quota exceeded"; break;
+        case MPI_ERR_READ_ONLY             : msg = "Read-only file or file system"; break;
+        case MPI_ERR_FILE_IN_USE           : msg = "File operation could not be completed, as the file is currently open by some process"; break;
+        case MPI_ERR_DUP_DATAREP           : msg = "Conversion functions could not be registered because a data representation identifier that was already defined was passed to MPI_REGISTER_DATAREP"; break;
+        case MPI_ERR_CONVERSION            : msg = "An error occurred in a user supplied data conversion function."; break;
+        case MPI_ERR_IO                    : msg = "Other I/O error"; break;
+#endif
+        case MPI_ERR_LASTCODE              : msg = "Last error code"; break;
+        default                            : msg = "DEFAULT"; break;
     }
-
     return msg;
 }
+#endif
 
 
 STATIC void server_send(void *buf, int count, int dest)
