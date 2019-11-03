@@ -107,356 +107,357 @@ static int me;
 
 void ARMCI_Finalize()
 {
+    MPI_Comm armci_comm = MPI_COMM_WORLD;
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &me);
+    MPI_Comm_rank(armci_comm, &me);
 
-    MPI_Reduce(&ARMCI_AccV_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_AccV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_AccV_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_AccV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_AccV,%d,%lf\n", ARMCI_AccV_c, ARMCI_AccV_t);
     }
 
     MPI_Reduce(&ARMCI_Barrier_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Barrier_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Barrier,%d,%lf\n", ARMCI_Barrier_c, ARMCI_Barrier_t);
     }
 
-    MPI_Reduce(&ARMCI_AccS_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_AccS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_AccS_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_AccS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_AccS,%d,%lf\n", ARMCI_AccS_c, ARMCI_AccS_t);
     }
 
-    MPI_Reduce(&ARMCI_NbPut_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_NbPut_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_NbPut_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_NbPut_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbPut,%d,%lf\n", ARMCI_NbPut_c, ARMCI_NbPut_t);
     }
 
     MPI_Reduce(&ARMCI_GetValueInt_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_GetValueInt_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_GetValueInt,%d,%lf\n", ARMCI_GetValueInt_c,
 	       ARMCI_GetValueInt_t);
     }
 
     MPI_Reduce(&ARMCI_Put_flag_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Put_flag_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Put_flag,%d,%lf\n", ARMCI_Put_flag_c,
 	       ARMCI_Put_flag_t);
     }
 
     MPI_Reduce(&ARMCI_NbGetS_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_NbGetS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbGetS,%d,%lf\n", ARMCI_NbGetS_c, ARMCI_NbGetS_t);
     }
 
     MPI_Reduce(&ARMCI_Malloc_local_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Malloc_local_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Malloc_local,%d,%lf\n", ARMCI_Malloc_local_c,
 	       ARMCI_Malloc_local_t);
     }
 
     MPI_Reduce(&ARMCI_Free_local_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Free_local_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Free_local,%d,%lf\n", ARMCI_Free_local_c,
 	       ARMCI_Free_local_t);
     }
 
-    MPI_Reduce(&ARMCI_Get_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Get_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Get_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Get_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Get,%d,%lf\n", ARMCI_Get_c, ARMCI_Get_t);
     }
 
-    MPI_Reduce(&ARMCI_Put_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Put_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Put_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Put_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Put,%d,%lf\n", ARMCI_Put_c, ARMCI_Put_t);
     }
 
     MPI_Reduce(&ARMCI_Destroy_mutexes_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Destroy_mutexes_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Destroy_mutexes,%d,%lf\n", ARMCI_Destroy_mutexes_c,
 	       ARMCI_Destroy_mutexes_t);
     }
 
-    MPI_Reduce(&ARMCI_GetS_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_GetS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_GetS_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_GetS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_GetS,%d,%lf\n", ARMCI_GetS_c, ARMCI_GetS_t);
     }
 
     MPI_Reduce(&ARMCI_NbAccV_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_NbAccV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbAccV,%d,%lf\n", ARMCI_NbAccV_c, ARMCI_NbAccV_t);
     }
 
     MPI_Reduce(&ARMCI_GetValueFloat_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_GetValueFloat_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_GetValueFloat,%d,%lf\n", ARMCI_GetValueFloat_c,
 	       ARMCI_GetValueFloat_t);
     }
 
     MPI_Reduce(&ARMCI_Malloc_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Malloc_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Malloc,%d,%lf\n", ARMCI_Malloc_c, ARMCI_Malloc_t);
     }
 
     MPI_Reduce(&ARMCI_NbAccS_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_NbAccS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbAccS,%d,%lf\n", ARMCI_NbAccS_c, ARMCI_NbAccS_t);
     }
 
-    MPI_Reduce(&ARMCI_PutS_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_PutS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_PutS_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_PutS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutS,%d,%lf\n", ARMCI_PutS_c, ARMCI_PutS_t);
     }
 
-    MPI_Reduce(&ARMCI_PutV_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_PutV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_PutV_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_PutV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutV,%d,%lf\n", ARMCI_PutV_c, ARMCI_PutV_t);
     }
 
-    MPI_Reduce(&ARMCI_Free_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Free_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Free_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Free_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Free,%d,%lf\n", ARMCI_Free_c, ARMCI_Free_t);
     }
 
     MPI_Reduce(&ARMCI_Init_args_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Init_args_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Init_args,%d,%lf\n", ARMCI_Init_args_c,
 	       ARMCI_Init_args_t);
     }
 
     MPI_Reduce(&ARMCI_PutValueInt_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_PutValueInt_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutValueInt,%d,%lf\n", ARMCI_PutValueInt_c,
 	       ARMCI_PutValueInt_t);
     }
 
     MPI_Reduce(&ARMCI_Memget_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Memget_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Memget,%d,%lf\n", ARMCI_Memget_c, ARMCI_Memget_t);
     }
 
     MPI_Reduce(&ARMCI_AllFence_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_AllFence_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_AllFence,%d,%lf\n", ARMCI_AllFence_c,
 	       ARMCI_AllFence_t);
     }
 
     MPI_Reduce(&ARMCI_NbPutV_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_NbPutV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbPutV,%d,%lf\n", ARMCI_NbPutV_c, ARMCI_NbPutV_t);
     }
 
     MPI_Reduce(&ARMCI_PutValueDouble_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_PutValueDouble_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutValueDouble,%d,%lf\n", ARMCI_PutValueDouble_c,
 	       ARMCI_PutValueDouble_t);
     }
 
-    MPI_Reduce(&ARMCI_GetV_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_GetV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_GetV_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_GetV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_GetV,%d,%lf\n", ARMCI_GetV_c, ARMCI_GetV_t);
     }
 
-    MPI_Reduce(&ARMCI_Test_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Test_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Test_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Test_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Test,%d,%lf\n", ARMCI_Test_c, ARMCI_Test_t);
     }
 
     MPI_Reduce(&ARMCI_Unlock_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Unlock_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Unlock,%d,%lf\n", ARMCI_Unlock_c, ARMCI_Unlock_t);
     }
 
-    MPI_Reduce(&ARMCI_Fence_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Fence_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Fence_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Fence_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Fence,%d,%lf\n", ARMCI_Fence_c, ARMCI_Fence_t);
     }
 
     MPI_Reduce(&ARMCI_Create_mutexes_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_Create_mutexes_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_Create_mutexes,%d,%lf\n", ARMCI_Create_mutexes_c,
 	       ARMCI_Create_mutexes_t);
     }
 
     MPI_Reduce(&ARMCI_PutS_flag_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_PutS_flag_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutS_flag,%d,%lf\n", ARMCI_PutS_flag_c,
 	       ARMCI_PutS_flag_t);
     }
 
     MPI_Reduce(&ARMCI_WaitProc_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_WaitProc_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_WaitProc,%d,%lf\n", ARMCI_WaitProc_c,
 	       ARMCI_WaitProc_t);
     }
 
-    MPI_Reduce(&ARMCI_Lock_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Lock_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Lock_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Lock_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Lock,%d,%lf\n", ARMCI_Lock_c, ARMCI_Lock_t);
     }
 
     MPI_Reduce(&ARMCI_GetValueDouble_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_GetValueDouble_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_GetValueDouble,%d,%lf\n", ARMCI_GetValueDouble_c,
 	       ARMCI_GetValueDouble_t);
     }
 
     MPI_Reduce(&ARMCI_NbGetV_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_NbGetV_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbGetV,%d,%lf\n", ARMCI_NbGetV_c, ARMCI_NbGetV_t);
     }
 
-    MPI_Reduce(&ARMCI_Rmw_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Rmw_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Rmw_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Rmw_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Rmw,%d,%lf\n", ARMCI_Rmw_c, ARMCI_Rmw_t);
     }
 
-    MPI_Reduce(&ARMCI_Init_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Init_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Init_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Init_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Init,%d,%lf\n", ARMCI_Init_c, ARMCI_Init_t);
     }
 
     MPI_Reduce(&ARMCI_WaitAll_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_WaitAll_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_WaitAll,%d,%lf\n", ARMCI_WaitAll_c, ARMCI_WaitAll_t);
     }
 
-    MPI_Reduce(&ARMCI_NbGet_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_NbGet_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_NbGet_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_NbGet_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbGet,%d,%lf\n", ARMCI_NbGet_c, ARMCI_NbGet_t);
     }
 
     MPI_Reduce(&ARMCI_PutValueFloat_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_PutValueFloat_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutValueFloat,%d,%lf\n", ARMCI_PutValueFloat_c,
 	       ARMCI_PutValueFloat_t);
     }
 
     MPI_Reduce(&ARMCI_NbPutS_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_NbPutS_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_NbPutS,%d,%lf\n", ARMCI_NbPutS_c, ARMCI_NbPutS_t);
     }
 
     MPI_Reduce(&ARMCI_PutS_flag_dir_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_PutS_flag_dir_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutS_flag_dir,%d,%lf\n", ARMCI_PutS_flag_dir_c,
 	       ARMCI_PutS_flag_dir_t);
     }
 
     MPI_Reduce(&ARMCI_PutValueLong_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_PutValueLong_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_PutValueLong,%d,%lf\n", ARMCI_PutValueLong_c,
 	       ARMCI_PutValueLong_t);
     }
 
-    MPI_Reduce(&ARMCI_Wait_c, &c, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(&ARMCI_Wait_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&ARMCI_Wait_c, &c, 1, MPI_INT, MPI_SUM, 0, armci_comm);
+    MPI_Reduce(&ARMCI_Wait_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0, armci_comm);
     if (me == 0) {
 	printf("ARMCI_Wait,%d,%lf\n", ARMCI_Wait_c, ARMCI_Wait_t);
     }
 
     MPI_Reduce(&ARMCI_GetValueLong_c, &c, 1, MPI_INT, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     MPI_Reduce(&ARMCI_GetValueLong_t, &t, 1, MPI_DOUBLE, MPI_SUM, 0,
-	       MPI_COMM_WORLD);
+	       armci_comm);
     if (me == 0) {
 	printf("ARMCI_GetValueLong,%d,%lf\n", ARMCI_GetValueLong_c,
 	       ARMCI_GetValueLong_t);
