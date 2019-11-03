@@ -3,6 +3,7 @@
 #include <mpi.h>
 
 #include "parmci.h"
+#include "armci.h"
 
 #define TIME MPI_Wtime
 
@@ -108,6 +109,14 @@ static int me;
 void ARMCI_Finalize()
 {
     MPI_Comm armci_comm = MPI_COMM_WORLD;
+
+    ARMCI_Group group;
+    ARMCI_Group_get_world(&group);
+#if HAVE_ARMCI_GROUP_COMM_MEMBER
+        armci_comm = group.comm;
+#else
+        armci_comm = armci_group_comm(&group);
+#endif
 
     MPI_Comm_rank(armci_comm, &me);
 
