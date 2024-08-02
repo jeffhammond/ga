@@ -6,16 +6,12 @@ AC_DEFUN([GA_TARGET],
 [# AH_TEMPLATE for all known TARGETs
 AH_TEMPLATE([CYGNUS],       [Define to 1 on Cygnus systems])
 AH_TEMPLATE([CYGWIN],       [Define to 1 on Cygwin systems])
-AH_TEMPLATE([FUJITSU_VPP],  [Define to 1 on fujitsu systems])
-AH_TEMPLATE([FUJITSU_VPP64],[Define to 1 on fujitsu systems])
 AH_TEMPLATE([IBM],          [Define to 1 on IBM SP systems])
 AH_TEMPLATE([IBM64],        [Define to 1 on 64bit IBM SP systems])
 AH_TEMPLATE([LINUX],        [Define to 1 on generic Linux systems])
 AH_TEMPLATE([LINUX64],      [Define to 1 on generic 64bit Linux systems])
 AH_TEMPLATE([MACX],         [Define to 1 on OSX systems])
 AH_TEMPLATE([MACX64],       [Define to 1 on 64bit OSX systems])
-AH_TEMPLATE([NEC],          [Define to 1 on NEC systems])
-AH_TEMPLATE([NEC64],        [Define to 1 on 64bit NEC systems])
 AH_TEMPLATE([SOLARIS],      [Define to 1 on Solaris systems])
 AH_TEMPLATE([SOLARIS64],    [Define to 1 on 64bit Solaris systems])
 AC_REQUIRE([AC_CANONICAL_BUILD])
@@ -26,13 +22,11 @@ AC_CACHE_CHECK([for TARGET base (64bit-ness checked later)],
 AS_IF([test "x$ga_cv_target_base" = xUNKNOWN],
     [AS_CASE([$host],
         [*cygwin*],         [ga_cv_target_base=CYGWIN],
-        [*fujitsu*],        [ga_cv_target_base=FUJITSU_VPP],
         [*ibm*],            [ga_cv_target_base=IBM],
         [*linux*],          [ga_cv_target_base=LINUX],
         [*darwin*],         [ga_cv_target_base=MACX],
         [*apple*],          [ga_cv_target_base=MACX],
         [*mingw32*],        [ga_cv_target_base=MINGW],
-        [*superux*],        [ga_cv_target_base=NEC],
         [*solaris*],        [ga_cv_target_base=SOLARIS])])
 ])dnl
 AC_DEFINE_UNQUOTED([$ga_cv_target_base], [1],
@@ -43,7 +37,7 @@ dnl AS_IF([test "x$ARMCI_TOP_BUILDDIR" != x], [
     AC_CACHE_CHECK([whether we think this system is what we call SYSV],
     [ga_cv_sysv],
     [AS_CASE([$ga_cv_target_base],
-        [SUN|SOLARIS|IBM|LINUX|NEC],
+        [SUN|SOLARIS|IBM|LINUX],
             [ga_cv_sysv=yes],
         [ga_cv_sysv=no])
     ])
@@ -54,12 +48,10 @@ dnl ])
 # Hopefully these will never be used and we can remove them soon.
 AM_CONDITIONAL([CYGNUS],       [test "$ga_cv_target_base" = CYGNUS])
 AM_CONDITIONAL([CYGWIN],       [test "$ga_cv_target_base" = CYGWIN])
-AM_CONDITIONAL([FUJITSU_VPP],  [test "$ga_cv_target_base" = FUJITSU_VPP])
 AM_CONDITIONAL([IBM],          [test "$ga_cv_target_base" = IBM])
 AM_CONDITIONAL([LINUX],        [test "$ga_cv_target_base" = LINUX])
 AM_CONDITIONAL([MACX],         [test "$ga_cv_target_base" = MACX])
 AM_CONDITIONAL([MINGW],        [test "$ga_cv_target_base" = MINGW])
-AM_CONDITIONAL([NEC],          [test "$ga_cv_target_base" = NEC])
 AM_CONDITIONAL([SOLARIS],      [test "$ga_cv_target_base" = SOLARIS])
 ])dnl
 
