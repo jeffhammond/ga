@@ -70,8 +70,6 @@
 #define INVALID_MA_HANDLE -1 
 #define NEAR_INT(x) (x)< 0.0 ? ceil( (x) - 0.5) : floor((x) + 0.5)
 
-#define BYTE_ADDRESSABLE_MEMORY
-
 #ifdef PROFILE_OLD
 #include "ga_profile.h"
 #endif
@@ -295,7 +293,6 @@ Integer _lo[MAXDIM], _hi[MAXDIM], _pinv, _p_handle;                            \
       ga_ownsM(g_handle, proc, _lo, _hi);                                      \
       gaCheckSubscriptM(subscript, _lo, _hi, GA[g_handle].ndim);               \
       if(_last==0) ld[0]=_hi[0]- _lo[0]+1+2*(Integer)GA[g_handle].width[0];    \
-      __CRAYX1_PRAGMA("_CRI shortloop");                                       \
       for(_d=0; _d < _last; _d++)            {                                 \
           _w = (Integer)GA[g_handle].width[_d];                                \
           _offset += (subscript[_d]-_lo[_d]+_w) * _factor;                     \
@@ -330,7 +327,6 @@ Integer   _mloc = p* ndim *2;\
 #define gam_ComputePatchIndex(ndim, lo, plo, dims, pidx){                      \
 Integer _d, _factor;                                                           \
           *pidx = plo[0] -lo[0];                                               \
-          __CRAYX1_PRAGMA("_CRI shortloop");                                   \
           for(_d= 0,_factor=1; _d< ndim -1; _d++){                             \
              _factor *= (dims[_d]);                                            \
              *pidx += _factor * (plo[_d+1]-lo[_d+1]);                          \
@@ -528,9 +524,6 @@ static void ngai_gets(char *loc_base_ptr, char *prem,int *stride_rem, char *pbuf
 /**
  *  A common routine called by both non-blocking and blocking GA put calls.
  */
-#ifdef __crayx1
-#pragma _CRI inline pnga_locate_region
-#endif
 void ngai_put_common(Integer g_a, 
                    Integer *lo,
                    Integer *hi,
@@ -546,7 +539,7 @@ void ngai_put_common(Integer g_a,
   int num_loops=2; /* 1st loop for remote procs; 2nd loop for local procs */
   Integer n_rstrctd;
   Integer *rank_rstrctd;
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
 #else
   Integer ga_nbhandle;
   int counter=0;
@@ -582,7 +575,7 @@ void ngai_put_common(Integer g_a,
 #endif
 
   if(nbhandle)ga_init_nbhandle(nbhandle);
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   else ga_init_nbhandle(&ga_nbhandle);
 #endif
 
@@ -591,9 +584,8 @@ void ngai_put_common(Integer g_a,
       ENABLE_PROFILE_PUT);
 #endif
 
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   for(loop=0; loop<num_loops; loop++) {
-    __CRAYX1_PRAGMA("_CRI novector");
 #endif
     Integer ldrem[MAXDIM];
     Integer idx_buf, *plo, *phi;
@@ -602,7 +594,7 @@ void ngai_put_common(Integer g_a,
     while (gai_iterator_next(&it_hdl, &proc, &plo, &phi, &prem, ldrem)) {
 
       /* check if it is local to SMP */
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
       cond = armci_domain_same_id(ARMCI_DOMAIN_SMP,(int)proc);
       if(loop==0) cond = !cond;
       if(cond) {
@@ -642,7 +634,7 @@ void ngai_put_common(Integer g_a,
               proc,field_off, field_size, size, 
               (armci_hdl_t*)get_armci_nbhandle(nbhandle));
         } else {
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
           /* ARMCI_PutS(pbuf,stride_loc,prem,stride_rem,count,ndim-1,proc); */
           ngai_puts(buf, pbuf,stride_loc,prem,stride_rem,count,ndim-1,proc,
               field_off, field_size, size);
@@ -663,11 +655,11 @@ void ngai_put_common(Integer g_a,
           }
 #endif
         }
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
       } /* end if(cond) */
 #endif
     }
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   }
   if(!nbhandle) nga_wait_internal(&ga_nbhandle);  
 #endif
@@ -925,7 +917,7 @@ void ngai_get_common(Integer g_a,
   int num_loops=2; /* 1st loop for remote procs; 2nd loop for local procs */
   Integer n_rstrctd;
   Integer *rank_rstrctd;
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
 #else
   Integer ga_nbhandle;
   int counter=0;
@@ -959,7 +951,7 @@ void ngai_get_common(Integer g_a,
 #endif
 
   if(nbhandle)ga_init_nbhandle(nbhandle);
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   else ga_init_nbhandle(&ga_nbhandle);
 #endif
 
@@ -968,9 +960,8 @@ void ngai_get_common(Integer g_a,
       ENABLE_PROFILE_GET);
 #endif
 
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   for(loop=0; loop<num_loops; loop++) {
-    __CRAYX1_PRAGMA("_CRI novector");
 #endif
     Integer ldrem[MAXDIM];
     Integer idx_buf, *plo, *phi;
@@ -979,7 +970,7 @@ void ngai_get_common(Integer g_a,
     while (gai_iterator_next(&it_hdl, &proc, &plo, &phi, &prem, ldrem)) {
 
       /* check if it is local to SMP */
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
       cond = armci_domain_same_id(ARMCI_DOMAIN_SMP,(int)proc);
       if(loop==0) cond = !cond;
       if(cond) {
@@ -1017,7 +1008,7 @@ void ngai_get_common(Integer g_a,
               proc,field_off, field_size, size,
               (armci_hdl_t*)get_armci_nbhandle(nbhandle));
         } else {
-#if defined(__crayx1) || defined(DISABLE_NBOPT)
+#if defined(DISABLE_NBOPT)
           /*ARMCI_GetS(prem,stride_rem,pbuf,stride_loc,count,ndim-1,proc); */
           ngai_gets(buf,prem,stride_rem,pbuf,stride_loc,count,ndim-1,proc, field_off, field_size, size);
 #else
@@ -1034,11 +1025,11 @@ void ngai_get_common(Integer g_a,
           }
 #endif
         }
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
       } /* end if(cond) */
 #endif
     }
-#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
+#if !defined(DISABLE_NBOPT)
   }
   if(!nbhandle) nga_wait_internal(&ga_nbhandle);  
 #endif
@@ -1333,11 +1324,6 @@ void pnga_nbget_field(Integer g_a, Integer *lo, Integer *hi,Integer foff, Intege
 {
   ngai_get_common(g_a,lo,hi,buf,ld,foff,fsize,nbhandle);
 }
-
-#ifdef __crayx1 
-#  pragma _CRI inline ga_get_
-#  pragma _CRI inline ngai_get_common
-#endif
 
 /**
  *  A common routine called by both non-blocking and blocking GA acc calls.
@@ -1772,7 +1758,7 @@ void pnga_access_block_grid_ptr(Integer g_a, Integer *index, void* ptr, Integer 
     factor = 1;
     for (i = 0; i<ndim; i++) {
       offset += ((index[i]-proc_index[i])/proc_grid[i])*block_dims[i]*factor;
-      factor *= ld[i];
+      if (i<ndim-1) factor *= ld[i];
     }
   }
 
@@ -1954,7 +1940,6 @@ unsigned long    lref=0, lptr;
         break;        
    }
 
-#ifdef BYTE_ADDRESSABLE_MEMORY
    /* check the allignment */
    lptr = (unsigned long)ptr;
    if( lptr%elemsize != lref%elemsize ){ 
@@ -1963,7 +1948,6 @@ unsigned long    lref=0, lptr;
        pnga_error("nga_access: MA addressing problem: base address misallignment",
                  handle);
    }
-#endif
 
    /* adjust index for Fortran addressing */
    (*index) ++ ;
@@ -2030,7 +2014,6 @@ unsigned long    lref=0, lptr;
         break;        
    }
 
-#ifdef BYTE_ADDRESSABLE_MEMORY
    /* check the allignment */
    lptr = (unsigned long)ptr;
    if( lptr%elemsize != lref%elemsize ){ 
@@ -2039,7 +2022,6 @@ unsigned long    lref=0, lptr;
        pnga_error("nga_access: MA addressing problem: base address misallignment",
                  handle);
    }
-#endif
 
    /* adjust index for Fortran addressing */
    (*index) ++ ;
@@ -2110,7 +2092,6 @@ unsigned long    lref=0, lptr;
         break;        
    }
 
-#ifdef BYTE_ADDRESSABLE_MEMORY
    /* check the allignment */
    lptr = (unsigned long)ptr;
    if( lptr%elemsize != lref%elemsize ){ 
@@ -2119,7 +2100,6 @@ unsigned long    lref=0, lptr;
        pnga_error("nga_access: MA addressing problem: base address misallignment",
                  handle);
    }
-#endif
 
    /* adjust index for Fortran addressing */
    (*index) ++ ;
@@ -2184,7 +2164,6 @@ unsigned long    lref=0, lptr;
         break;        
    }
 
-#ifdef BYTE_ADDRESSABLE_MEMORY
    /* check the allignment */
    lptr = (unsigned long)ptr;
    if( lptr%elemsize != lref%elemsize ){ 
@@ -2193,7 +2172,6 @@ unsigned long    lref=0, lptr;
        pnga_error("nga_access_block_segment: MA addressing problem: base address misallignment",
                  handle);
    }
-#endif
 
    /* adjust index for Fortran addressing */
    (*index) ++ ;
