@@ -61,12 +61,7 @@
 #define MAXPROC 128
 #define TIMES 100
 
-#ifdef CRAY
-# define ELEMS 800
-#else
 # define ELEMS 200
-#endif
-
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
@@ -77,43 +72,6 @@
 /***************************** global data *******************/
 int me, nproc;
 void* work[MAXPROC]; /* work array for propagating addresses */
-
-
-
-#ifdef MSG_COMMS_PVM
-void pvm_init(int argc, char *argv[])
-{
-    int mytid, mygid, ctid[MAXPROC];
-    int np, i;
-
-    mytid = pvm_mytid();
-    if((argc != 2) && (argc != 1)) goto usage;
-    if(argc == 1) np = 1;
-    if(argc == 2)
-        if((np = atoi(argv[1])) < 1) goto usage;
-    if(np > MAXPROC) goto usage;
-
-    mygid = pvm_joingroup(MPGROUP);
-
-    if(np > 1)
-        if (mygid == 0) 
-            i = pvm_spawn(argv[0], argv+1, 0, "", np-1, ctid);
-
-    while(pvm_gsize(MPGROUP) < np) sleep(1);
-
-    /* sync */
-    pvm_barrier(MPGROUP, np);
-    
-    printf("PVM initialization done!\n");
-    
-    return;
-
-usage:
-    fprintf(stderr, "usage: %s <nproc>\n", argv[0]);
-    pvm_exit();
-    exit(-1);
-}
-#endif
           
 void create_array(void *a[], int elem_size, int ndim, int dims[])
 {
@@ -131,9 +89,11 @@ void create_array(void *a[], int elem_size, int ndim, int dims[])
 
 void destroy_array(void *ptr[])
 {
-    armci_msg_barrier();
+    int check;
 
-    assert(!ARMCI_Free(ptr[me]));
+    armci_msg_barrier();
+    check = !ARMCI_Free(ptr[me]);
+    assert(check);
 }
 
 #define MAXELEMS      1000
@@ -292,7 +252,11 @@ void test_aggregate(int dryrun) {
     }
       }
     armci_msg_barrier();
-    if(!dryrun)if(me==0) printf("\n  aggregate put ..O.K.\n"); fflush(stdout);
+    if(!dryrun) {
+        if(me==0) {
+            printf("\n  aggregate put ..O.K.\n"); fflush(stdout);
+        }
+    }
 
     if(me==0) {
       for(i=1; i<nproc; i++) {
@@ -304,8 +268,11 @@ void test_aggregate(int dryrun) {
       }
     }
     armci_msg_barrier();
-    if(!dryrun)if(me==0) printf("  aggregate get ..O.K.\n"); fflush(stdout);
-
+    if(!dryrun) {
+        if(me==0) {
+            printf("  aggregate get ..O.K.\n"); fflush(stdout);
+        }
+    }
 
     ARMCI_AllFence();
     armci_msg_barrier();

@@ -25,10 +25,10 @@
 #   define sleep(x) Sleep(1000*(x))
 #endif
 
-//#define ARMCI_INT     -99
-//#define ARMCI_LONG    -101
-//#define ARMCI_FLOAT   -306
-//#define ARMCI_DOUBLE  -307
+/*#define ARMCI_INT     -99  */
+/*#define ARMCI_LONG    -101 */
+/*#define ARMCI_FLOAT   -306 */
+/*#define ARMCI_DOUBLE  -307 */
 
 #define FLOAT_EPS  ((float) 1.0 / 4096)
 #define DOUBLE_EPS ((double) 1.0 / 16384)
@@ -74,11 +74,7 @@
 #define MAXPROC 1024
 #define TIMES 100
 
-#ifdef CRAY
-# define ELEMS 800
-#else
 # define ELEMS 200
-#endif
 
 typedef struct {
   float real;
@@ -100,54 +96,6 @@ typedef struct {
 int me, nproc;
 void *work[MAXPROC]; /* work array for propagating addresses */
 
-
-
-#ifdef PVM
-void pvm_init(int argc, char *argv[])
-{
-  int mytid, mygid, ctid[MAXPROC];
-  int np, i;
-
-  mytid = pvm_mytid();
-  if ((argc != 2) && (argc != 1)) {
-    goto usage;
-  }
-  if (argc == 1) {
-    np = 1;
-  }
-  if (argc == 2)
-    if ((np = atoi(argv[1])) < 1) {
-      goto usage;
-    }
-  if (np > MAXPROC) {
-    goto usage;
-  }
-
-  mygid = pvm_joingroup(MPGROUP);
-
-  if (np > 1)
-    if (mygid == 0) {
-      i = pvm_spawn(argv[0], argv + 1, 0, "", np - 1, ctid);
-    }
-
-  while (pvm_gsize(MPGROUP) < np) {
-    sleep(1);
-  }
-
-  /* sync */
-  pvm_barrier(MPGROUP, np);
-
-  printf("PVM initialization done!\n");
-
-  return;
-
-usage:
-  fprintf(stderr, "usage: %s <nproc>\n", argv[0]);
-  pvm_exit();
-  exit(-1);
-}
-#endif
-
 void create_array(void *a[], int elem_size, int ndim, int dims[])
 {
   int bytes = elem_size, i, rc;
@@ -166,9 +114,10 @@ void create_array(void *a[], int elem_size, int ndim, int dims[])
 
 void destroy_array(void *ptr[])
 {
+  int check;
   ARMCI_Barrier();
-
-  assert(!ARMCI_Free(ptr[me]));
+  check = !ARMCI_Free(ptr[me]);
+  assert(check);
 }
 
 

@@ -3,16 +3,8 @@
 #endif
 c $Id: pgtest.F,v 1.9 2005-11-23 10:25:18 manoj Exp $
 c vector boxes lack arithmetic precision 
-#ifdef CRAY_YMP
-# define THRESH 1d-10
-# define THRESHF 1e-5
-#elif defined(FUJITSU)
-# define THRESH 1d-12
-# define THRESHF 1e-5
-#else
 # define THRESH 1d-13
 # define THRESHF 1e-5
-#endif
 
 #define MISMATCH(x,y) abs(x-y)/max(1d0,abs(x)).gt.THRESH
 #define MISMATCHF(x,y) abs(x-y)/max(1.0,abs(x)).gt.THRESHF 
@@ -21,7 +13,7 @@ c vector boxes lack arithmetic precision
 c#define MIRROR
 c#define GA3
 c#define NGA_GATSCAT
-#define USE_RESTRICTED
+c#define USE_RESTRICTED
 
 #ifdef USE_RESTRICTED
 #  define NEW_API
@@ -607,6 +599,9 @@ c     overlapping accumulate
 #  ifdef MIRROR
       call ga_set_pgroup(g_b,p_mirror)
 #  endif
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_b, rstrctd_list, num_rstrctd)
+#endif
       if (.not.ga_allocate(g_b)) then
 #else
 #  ifndef MIRROR

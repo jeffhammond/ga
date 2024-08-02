@@ -152,7 +152,7 @@ reqbuf_pool_t* _armci_buf_state;  /* array that describes state of each buf */
 extern active_socks_t *_armci_active_socks;
 
 /* returns bufinfo, given bufid */
-INLINE BUF_INFO_T *_armci_id_to_bufinfo(int bufid) {
+BUF_INFO_T *_armci_id_to_bufinfo(int bufid) {
   if (bufid < 0 || bufid >= (MAX_BUFS+MAX_SMALL_BUFS))
       armci_die2("_armci_id_to_bufinfo: bad id",bufid,MAX_BUFS);
 
@@ -489,7 +489,7 @@ void _armci_buf_release_index(int tbl_idx) {
 
 /*\ release buffer when it becomes free
 \*/
-INLINE void _armci_buf_release(void *buf)
+void _armci_buf_release(void *buf)
 {
     _armci_buf_release_index(_armci_buf_to_index(buf));
 }
@@ -551,7 +551,7 @@ char *_armci_buf_get(int size, int operation, int to)
             THREAD_UNLOCK(armci_user_threads.buf_lock);
 
             /* try network complete */
-#if defined(SOCKETS) || defined(MELLANOX)
+#if defined(SOCKETS)
             tbl_idx = armci_test_network_complete();
 #else /* all network should eventually use armci_test_network_complete */
 	    tbl_idx = small ? _armci_buf_state->smavail : _armci_buf_state->avail;
@@ -839,8 +839,8 @@ int smallbuf_size = sizeof(buf_smext_t)*(MAX_SMALL_BUFS);
      
 
      if(DEBUG2_){
-	printf("%d:armci_init_bufs: pointer %p, before align ptr=%p bufptr=%p end of region is %p  size=%d extra=%d\n",
-               armci_me,_armci_buffers,tmp,_armci_buffers->buffer,(_armci_buffers+MAX_BUFS),
+	printf("%d:armci_init_bufs: pointer %p, before align ptr=%p bufptr=%p end of region is %p  size=%lu extra=%d\n",
+               armci_me,(void*)_armci_buffers,tmp,_armci_buffers->buffer,(void*)(_armci_buffers+MAX_BUFS),
                MAX_BUFS*sizeof(buf_ext_t),extra);
 	fflush(stdout);
      }
@@ -975,9 +975,8 @@ buf_state_t *buf_state = _armci_buf_state->table +idx;
 \*/
 int _armci_buf_test_index(int idx, int called)
 {
-int count,retval=0;
+int retval=0;
 buf_state_t *buf_state = _armci_buf_state->table +idx;
-    count = buf_state->count;
     if(DEBUG_ ){
        printf("%d:buf_test_index:%d op=%d first=%d count=%d called=%d\n",
               armci_me,idx,buf_state->op,buf_state->first,buf_state->count,
@@ -1406,7 +1405,7 @@ int count=1, i;
 #endif
 
     if(DEBUG_ || 0) {
-      printf("%d:buf_get:size=%d max=%d got %d ptr=%p count=%d op=%d to=%d\n",
+      printf("%d:buf_get:size=%d max=%lu got %d ptr=%p count=%d op=%d to=%d\n",
              armci_me,size,MSG_BUFLEN_SMALL,avail,
             _armci_buf_state->buf[avail].buffer, count,operation,to);
       fflush(stdout);
@@ -1701,36 +1700,36 @@ BUF_INFO_T *_armci_tag_to_bufinfo(msg_tag_t tag) {
 
 
 /* inline primitives for buffer state management */
-INLINE char *_armci_buf_get_clear_busy(int size, int operation, int to) {
+char *_armci_buf_get_clear_busy(int size, int operation, int to) {
     char *buf = _armci_buf_get(size, operation, to);
     _armci_buf_set_busy(buf, 0);
     return buf;
 }
 
-INLINE void _armci_buf_set_busy(void *buf, int state) {
+void _armci_buf_set_busy(void *buf, int state) {
         _armci_buf_state->table[_armci_buf_to_index(buf)].busy = state;
 }
 
-INLINE void _armci_buf_set_busy_idx(int idx, int state) {
+void _armci_buf_set_busy_idx(int idx, int state) {
     _armci_buf_state->table[idx].busy = state;
 }
 
 #if 0
-INLINE int _armci_buf_cmpld(void *buf) {
+int _armci_buf_cmpld(void *buf) {
     return _armci_buf_state->table[_armci_buf_to_index(buf)].cmpl;
 }
 #else
-INLINE int _armci_buf_cmpld(int bufid) {
+int _armci_buf_cmpld(int bufid) {
         return _armci_buf_state->table[bufid].cmpl;
 }
 #endif
 
 
-INLINE void _armci_buf_set_cmpld(void *buf, int state) {
+void _armci_buf_set_cmpld(void *buf, int state) {
         _armci_buf_state->table[_armci_buf_to_index(buf)].cmpl = state;
 }
 
-INLINE void _armci_buf_set_cmpld_idx(int idx, int state) {
+void _armci_buf_set_cmpld_idx(int idx, int state) {
     _armci_buf_state->table[idx].cmpl = state;
 }
 

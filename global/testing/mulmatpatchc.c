@@ -12,11 +12,7 @@
 #include "mp3.h"
 #include "xgemm.h"
 
-#if defined(FUJITSU) || defined(CRAY_YMP)
-#   define THRESH 1.0e-10
-#else
 #   define THRESH 1.0e-20
-#endif
 #define ABS(x) ((x) >= 0.0 ? (x) : -(x))
 #define MAX(x,y) ((x) >= (y) ? (x) : (y))
 #define MISMATCH(x,y) (ABS((x)-(y)) / MAX(1.0,ABS((x)))) > THRESH
@@ -33,6 +29,11 @@ static void dpatch_test(
         int bkpos, int bnpos,
         int cmpos, int cnpos);
 static void dpatch_test2();
+#if HAVE_BLAS
+extern void dgemm_(char *, char *, int *, int *, int *, double *, const double *, int *, const double *, int *, double *, double *, int *);
+#else
+extern void xb_dgemm(char *, char *, int *, int *, int *, double *, const double *, int *, const double *, int *, double *, double *, int *);
+#endif
 
 int main(int argc, char **argv)
 {
@@ -317,7 +318,12 @@ static void dpatch_test(
     tb = 'n';
     alpha = 1e0;
     beta = 0e0;
+    
+    #if HAVE_BLAS
+    dgemm_(&tb, &ta, &n, &m, &k, &alpha, b, &n, a, &k, &beta, c, &n);
+    #else
     xb_dgemm(&tb, &ta, &n, &m, &k, &alpha, b, &n, a, &k, &beta, c, &n);
+    #endif
 
     /* perform global computation */
     NGA_Matmul_patch(ta, tb, &alpha, &beta, 

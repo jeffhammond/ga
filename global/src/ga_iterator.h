@@ -12,6 +12,8 @@ typedef struct {
   Integer count;
   Integer *map;
   Integer *proclist;
+  int     *proclistperm;
+  Integer *mapc;
   Integer nproc;
   Integer offset;
   Integer iproc;
@@ -115,7 +117,6 @@ typedef struct {
 #define gam_setstride(ndim, size, ld, ldrem, stride_rem, stride_loc){\
   int _i;                                                            \
   stride_rem[0]= stride_loc[0] = (int)size;                          \
-  __CRAYX1_PRAGMA("_CRI novector");                                  \
   for(_i=0;_i<ndim-1;_i++){                                          \
     stride_rem[_i] *= (int)ldrem[_i];                                \
     stride_loc[_i] *= (int)ld[_i];                                   \
@@ -129,6 +130,7 @@ extern void gai_iterator_init(Integer, Integer [], Integer [], _iterator_hdl *);
 extern void gai_iterator_reset(_iterator_hdl *);
 extern int gai_iterator_next(_iterator_hdl *, int *, Integer *[],
         Integer *[], char **, Integer []);
+extern int gai_iterator_last(_iterator_hdl *);
 extern void gai_iterator_destroy(_iterator_hdl *);
 
 extern void pnga_local_iterator_init(Integer, _iterator_hdl*);

@@ -42,6 +42,9 @@ libcomex_la_LIBADD += $(MPI_LIBS)
 libcomex_la_LIBADD += $(COMEX_NETWORK_LIBS)
 libcomex_la_LIBADD += $(BLAS_LIBS)
 libcomex_la_LIBADD += $(LIBS)
+if COMEX_NETWORK_OFI
+libcomex_la_LIBADD += $(LIBADD_DLOPEN)
+endif
 include_HEADERS += $(top_srcdir)/src-common/comex.h
 
 AM_CPPFLAGS += $(MPI_CPPFLAGS)
@@ -63,6 +66,9 @@ libcomexi_la_LIBADD += $(MPI_LIBS)
 libcomexi_la_LIBADD += $(COMEX_NETWORK_LIBS)
 libcomexi_la_LIBADD += $(BLAS_LIBS)
 libcomexi_la_LIBADD += $(LIBS)
+if COMEX_NETWORK_OFI
+libcomexi_la_LIBADD += $(LIBADD_DLOPEN)
+endif
 
 ##############################################################################
 # compiler and linker flags
@@ -93,13 +99,6 @@ CLEANFILES += $(bin_SCRIPTS)
 #
 if COMEX_NETWORK_PORTALS4
 include $(top_srcdir)/src-portals4/Makefile.inc
-endif
-
-##############################################################################
-# src-dmapp
-#
-if COMEX_NETWORK_DMAPP
-include $(top_srcdir)/src-dmapp/Makefile.inc
 endif
 
 ##############################################################################

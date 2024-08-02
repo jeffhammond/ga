@@ -8,7 +8,7 @@
 #   include <stdio.h>
 #endif
 
-#if !defined(ACC_COPY) &&!defined(CRAY_YMP) &&!defined(CYGNUS)&&!defined(CYGWIN) &&!defined(BGML) &&!defined(DCMF)
+#if !defined(ACC_COPY) &&!defined(CYGNUS)&&!defined(CYGWIN)
 #   define REMOTE_OP 
 #endif
 
@@ -97,13 +97,9 @@ int armci_pack_strided(int op, void* scale, int proc,
 
 #ifdef STRIDED_GET_BUFLEN
     if(op==GET)bufsize=STRIDED_GET_BUFLEN;
-#  ifdef HITACHI
-    else 
-	if(stride_levels || ARMCI_ACC(op))bufsize=MSG_BUFLEN_SMALL-PAGE_SIZE;
-#  endif
 #endif
 
-#if (defined(GM_) || defined(VIA_) || defined(VAPI_))
+#if (defined(GM_) || defined(VAPI_))
     /*we cant assume that the entire available buffer will be used for data, 
       fact that the header and descriptor also go in the same buffer should be
       considered while packing.
@@ -202,12 +198,17 @@ void armci_dispatch_strided(void *ptr, int stride_arr[], int count[],
                             int strides, int fit_level, int nb, int bufsize, 
                             void (*fun)(void*,int*,int*,int,void*), void *arg)
 {
-    int  sn,first_call=0;
+    int  sn;
+#       ifdef PIPE_MEDIUM_BUFSIZE_
+    int  first_call=0;
+#       endif
     void *ptr_upd;
 
     /* determine decomposition of the patch to fit in the buffer */
     if(fit_level<0){
+#       ifdef PIPE_MEDIUM_BUFSIZE_
        first_call=1;
+#       endif
        armci_fit_buffer(count, strides, &fit_level, &nb, bufsize);
     }
  

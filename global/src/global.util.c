@@ -274,11 +274,7 @@ void pnga_print_stats()
 {
 int i;
      GAstat_arr = (long*)&GAstat;
-#ifdef __crayx1
-#ifdef NO_GA_STATS
-     printf("\tNOTE:GA stats have been disabled on x1 for some GA calls, to enable them comment the line LIB_DEFINES += -DNO_GA_STATS in global/src/GNUmakefile under the GA directory");
-#endif
-#endif
+
      printf("\n                         GA Statistics for process %4d\n",(int)pnga_nodeid());
      printf("                         ------------------------------\n\n");
      printf("       create   destroy   get      put      acc     scatter   gather  read&inc\n");
@@ -335,11 +331,7 @@ void pnga_error(char *string, Integer icode)
 extern void Error();
 #endif
 
-#ifdef CRAY_T3D 
-#  define FOUT stdout
-#else
-#  define FOUT stderr
-#endif
+#define FOUT stderr
 #define ERR_LEN 400
     int level;
     char error_buffer[ERR_LEN];
@@ -352,10 +344,6 @@ extern void Error();
 
     /* print GA names stack */
     sprintf(error_buffer,"%d:", (int)pnga_nodeid());
-    for(level = 0; level < GA_stack_size; level++){
-       strcat(error_buffer,GA_name_stack[level]);
-       strcat(error_buffer,":");
-    }
     strcat(error_buffer,string);
     strcat(error_buffer,":");
        
@@ -432,6 +420,7 @@ void pnga_print_distribution(int fstyle, Integer g_a)
 Integer ndim, i, proc, type, nproc=pnga_nnodes();
 Integer dims[MAXDIM], lo[MAXDIM], hi[MAXDIM];
 char msg[100];
+char ctype[128];
 char *name;
 int local_sync_begin,local_sync_end;
 
@@ -464,20 +453,128 @@ int local_sync_begin,local_sync_end;
       }
 
       /* print array range for every processor */
-      for(proc = 0; proc < nproc; proc++){
+      
+      pnga_get_distribution_type(g_a, ctype);
+      if (!strcmp(ctype,"regular")) {
+        for(proc = 0; proc < nproc; proc++){
           pnga_distribution(g_a,proc,lo,hi);
           sprintf(msg,"Process=%d\t owns array section: ",(int)proc);
 
           /* for C style need to swap and decremenent by 1 both arrays */
           if(!fstyle){
-             for(i=0; i<ndim/2; i++){
-                 swap(lo+i,lo+ndim-i-1); 
-                 swap(hi+i,hi+ndim-i-1); 
-             }
-             for(i=0; i<ndim; i++)lo[i]--;
-             for(i=0; i<ndim; i++)hi[i]--;
+            for(i=0; i<ndim/2; i++){
+              swap(lo+i,lo+ndim-i-1); 
+              swap(hi+i,hi+ndim-i-1); 
+            }
+            for(i=0; i<ndim; i++)lo[i]--;
+            for(i=0; i<ndim; i++)hi[i]--;
           }
           gai_print_range(msg,(int)ndim,lo,hi,"\n");
+        }
+      } else if (!strcmp(ctype,"block_cyclic")) {
+        Integer nblocks[MAXDIM];
+        Integer total, j;
+        pnga_nblock(g_a,nblocks);
+        printf("\nDistribution is block-cyclic\n");
+        total = 1;
+        for (i=0; i<ndim; i++) {
+          total *= nblocks[i];
+        }
+        printf("\nTotal of %ld blocks on %ld processors\n",total,nproc);
+        for (i=0; i<nproc; i++) {
+          printf("Distribution on process %ld\n",i);
+          for (j=i; j<total; j += nproc) {
+            pnga_distribution(g_a,j,lo,hi);
+            sprintf(msg,"  Block=%d\t corresponds to array section: ",(int)j);
+            /* for C style need to swap and decremenent by 1 both arrays */
+            if(!fstyle){
+              for(i=0; i<ndim/2; i++){
+                swap(lo+i,lo+ndim-i-1); 
+                swap(hi+i,hi+ndim-i-1); 
+              }
+              for(i=0; i<ndim; i++)lo[i]--;
+              for(i=0; i<ndim; i++)hi[i]--;
+            }
+            gai_print_range(msg,(int)ndim,lo,hi,"\n");
+          }
+        }
+      } else if (!strcmp(ctype,"scalapack") ||
+          !strcmp(ctype,"tiled_irreg") || !strcmp(ctype,"tiled")) {
+        Integer nblocks[MAXDIM], proc_grid[MAXDIM], proc_idx[MAXDIM];
+        Integer index[MAXDIM];
+        Integer ok, j, idx;
+        pnga_nblock(g_a,nblocks);
+        char *ptr;
+        if (!strcmp(ctype,"scalapack")) {
+          printf("\nDistribution is ScaLAPACK\n");
+        } else if (!strcmp(ctype,"tiled_irreg")) {
+          printf("\nDistribution is Tiled Irregular\n");
+        } else if (!strcmp(ctype,"tiled")) {
+          printf("\nDistribution is Tiled\n");
+        }
+
+        printf("\n");
+        printf("Number of blocks in each dimension: [");
+        for (i=0; i<ndim-1; i++) printf("%ld,",nblocks[i]);
+        printf("%ld]\n\n",nblocks[ndim-1]);
+
+        pnga_get_proc_grid(g_a,proc_grid);
+        printf("Processor grid dimensions: [");
+        for (i=0; i<ndim-1; i++) printf("%ld,",proc_grid[i]);
+        printf("%ld]\n\n",nblocks[ndim-1]);
+
+        for (i=0; i<nproc; i++) {
+          printf("Distribution on process %ld\n",i);
+          pnga_get_proc_index(g_a,i,proc_idx);
+          pnga_get_proc_index(g_a,i,index);
+          ok = 1;
+          while (ok) {
+            /* find block index */
+            idx = 0;
+            for (j=ndim-1; j>=0; j--) {
+              idx = idx*nblocks[j]+index[j];
+            }
+            sprintf(msg," idx: %ld Block=[",idx);
+            pnga_distribution(g_a,idx,lo,hi);
+            ptr = msg + strlen(msg);
+            if (fstyle) {
+              for (j=0; j<ndim-1; j++) {
+                sprintf(ptr,"%ld,",index[j]);
+                ptr += strlen(ptr);
+              }
+              sprintf(ptr,"%ld]",index[ndim-1]);
+              ptr += strlen(ptr);
+            } else {
+              for (j=ndim-1; j>0; j++) {
+                sprintf(ptr,"%ld,",index[j]);
+                ptr += strlen(ptr);
+              }
+              sprintf(ptr,"%ld]",index[0]);
+              ptr += strlen(ptr);
+            }
+            sprintf(ptr,"\t corresponds to array section: %d ",(int)j);
+            /* for C style need to swap and decremenent by 1 both arrays */
+            if(!fstyle){
+              for(i=0; i<ndim/2; i++){
+                swap(lo+i,lo+ndim-i-1); 
+                swap(hi+i,hi+ndim-i-1); 
+              }
+              for(i=0; i<ndim; i++)lo[i]--;
+              for(i=0; i<ndim; i++)hi[i]--;
+            }
+            gai_print_range(msg,(int)ndim,lo,hi,"\n");
+            index[0] += proc_grid[0];
+            for (j=0; j<ndim; j++) {
+              if (index[j] >= nblocks[j] && j<ndim-1) {
+                index[j] = proc_idx[j];
+                index[j+1] += proc_grid[j+1];
+              }
+            }
+            if (index[ndim-1] >= nblocks[ndim-1]) ok = 0;
+          }
+        }
+      } else {
+        printf("\nData distribution type is unknown\n");
       }
       fflush(stdout);
     }

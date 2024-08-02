@@ -63,12 +63,7 @@
 #define MAXPROC 128
 #define TIMES 100
 
-#ifdef CRAY
-# define ELEMS 800
-#else
 # define ELEMS 200
-#endif
-
 
 
 /***************************** macros ************************/
@@ -273,8 +268,10 @@ int i, rc;
 
 void destroy_array(void *ptr[])
 {
+    int check;
     armci_msg_barrier();
-    assert(!ARMCI_Free(ptr[me]));
+    check = !ARMCI_Free(ptr[me]) ;
+    assert(check);
 }
 
 

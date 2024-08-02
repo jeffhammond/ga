@@ -53,11 +53,7 @@
 #define MAXPROC 128
 #define TIMES 100
 
-#ifdef CRAY
-# define ELEMS 800
-#else
 # define ELEMS 200
-#endif
 
 
 /***************************** macros ************************/
@@ -120,55 +116,6 @@ static double timer()
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000000.0 + tv.tv_usec;
 }
-
-
-#ifdef PVM
-void pvm_init(int argc, char *argv[])
-{
-  int mytid, mygid, ctid[MAXPROC];
-  int np, i;
-
-  mytid = pvm_mytid();
-  if ((argc != 2) && (argc != 1)) {
-    goto usage;
-  }
-  if (argc == 1) {
-    np = 1;
-  }
-  if (argc == 2) {
-    if ((np = atoi(argv[1])) < 1) {
-      goto usage;
-    }
-  }
-  if (np > MAXPROC) {
-    goto usage;
-  }
-
-  mygid = pvm_joingroup(MPGROUP);
-
-  if (np > 1) {
-    if (mygid == 0) {
-      i = pvm_spawn(argv[0], argv + 1, 0, "", np - 1, ctid);
-    }
-  }
-
-  while (pvm_gsize(MPGROUP) < np) {
-    sleep(1);
-  }
-
-  /* sync */
-  pvm_barrier(MPGROUP, np);
-
-  printf("PVM initialization done!\n");
-
-  return;
-
-usage:
-  fprintf(stderr, "usage: %s <nproc>\n", argv[0]);
-  pvm_exit();
-  exit(-1);
-}
-#endif
 
 /*\ generate random range for a section of multidimensional array
 \*/
@@ -557,9 +504,11 @@ void create_array(void *a[], int elem_size, int ndim, int dims[])
 
 void destroy_array(void *ptr[])
 {
+  int rc;
   comex_barrier(COMEX_GROUP_WORLD);
 #if 1
-  assert(!comex_free(ptr[me], COMEX_GROUP_WORLD));
+  rc = comex_free(ptr[me], COMEX_GROUP_WORLD);
+  assert(rc == 0);
 #endif
 }
 
@@ -1520,7 +1469,8 @@ void test_vector_acc()
   comex_barrier(COMEX_GROUP_WORLD);
 
   /* copy my patch into local array c */
-  assert(!comex_get((double *)b[proc], c, bytes, proc, COMEX_GROUP_WORLD));
+  rc = comex_get((double *)b[proc], c, bytes, proc, COMEX_GROUP_WORLD);
+  assert(rc == 0);
 
   /*        scale = alpha*TIMES*nproc; */
   scale = alpha * TIMES * nproc * nproc;
