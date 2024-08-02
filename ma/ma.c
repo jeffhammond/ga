@@ -25,7 +25,12 @@
 #include "scope.h"
 #include "table.h"
 
-#ifdef ENABLE_ARMCI_MEM_OPTION
+// this was only ever disabled for Blue Gene, which has been removed.
+#define ENABLE_ARMCI_MEM_OPTION 1
+
+#if defined(ENABLE_CUDA_MEM)
+extern int cudaMallocManaged(void** devPtr, size_t size, unsigned int flags);
+#elif defined(ENABLE_ARMCI_MEM_OPTION)
 extern void* ARMCI_Malloc_local(long bytes);
 #endif
 
@@ -84,7 +89,7 @@ extern void* ARMCI_Malloc_local(long bytes);
 
 /* block lengths are integral multiples of this */
 /*
- * Note that for machines such as the KSR on which sizeof(pointer)
+ * Note that for machines on which sizeof(pointer)
  * and sizeof(long) are different than sizeof(int), alignment issues
  * can be tricky.  For example, the fields of a struct (e.g.,
  * client_space of AD) can be improperly aligned if the struct is
@@ -95,14 +100,10 @@ extern void* ARMCI_Malloc_local(long bytes);
  * problem is solved, but the sum of sizes of preceding fields can
  * still potentially cause difficulty.
  */
-#if defined(BGQ)
-#define ALIGNMENT	32
-#else
-#define ALIGNMENT	sizeof(long)
-#endif
+#define ALIGNMENT	sizeof(size_t)
 
 /* min size of block split and placed on free list */
-#define MINBLOCKSIZE mai_round((long)(ALIGNMENT + BLOCK_OVERHEAD_FIXED), \
+#define MINBLOCKSIZE mai_round((size_t)(ALIGNMENT + BLOCK_OVERHEAD_FIXED), \
         (ulongi)ALIGNMENT)
 
 /* signatures for guard words */
@@ -114,7 +115,7 @@ extern void* ARMCI_Malloc_local(long bytes);
  **/
 
 typedef unsigned int Guard;   /* for detection of memory trashing */
-typedef unsigned long ulongi; /* for brevity */
+typedef size_t ulongi; /* for brevity */
 
 /* allocation request for a block */
 typedef struct _AR
@@ -180,7 +181,7 @@ private Integer ma_nelem(Pointer address, ulongi length, Integer datatype);
 private void ma_preinitialize(char *caller);
 private Boolean mh2ad(Integer memhandle, AD **adout, BlockLocation location, char *caller);
 private void mh_free(AD *ad);
-private long mai_round(long value, ulongi unit);
+private size_t mai_round(size_t value, ulongi unit);
 private void str_ncopy(char *to, char *from, int maxchars);
 
 /* foreign routines */
@@ -364,7 +365,7 @@ private Integer ma_numalign = 0;
 
 /* compute 0-based index for client_space from AD */
 #define client_space_index(ad) \
-    ((MA_AccessIndex)((long)((ad)->client_space - ma_base[(ad)->datatype]) / \
+    ((MA_AccessIndex)((size_t)((ad)->client_space - ma_base[(ad)->datatype]) / \
                  ma_sizeof[(ad)->datatype]))
 
 /* compute address of guard from AD */
@@ -601,9 +602,9 @@ private void ad_print(ad, block_type)
         (void)printf("unknown");
     else
         (void)printf("%ld",
-            (long)memhandle);
+            (size_t)memhandle);
     (void)printf(", address 0x%lx",
-        (long)ad);
+        (size_t)ad);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -646,11 +647,11 @@ private void balloc_after(ar, address, client_space, nbytes)
 
     L_client_space = ar->nelem * ma_sizeof[datatype];
 
-    L_gap1 = ((long)B_base
-        - (long)B_address
-        - (long)sizeof(AD)
-        - (long)sizeof(Guard))
-        % (long)ma_sizeof[datatype];
+    L_gap1 = ((size_t)B_base
+        - (size_t)B_address
+        - (size_t)sizeof(AD)
+        - (size_t)sizeof(Guard))
+        % (size_t)ma_sizeof[datatype];
 
     if (L_gap1 < 0)
         L_gap1 += ma_sizeof[datatype];
@@ -668,8 +669,8 @@ private void balloc_after(ar, address, client_space, nbytes)
      */
 
     if (ma_numalign > 0) {
-      unsigned long mask = (1<<ma_numalign)-1;
-      int diff = ((unsigned long) B_client_space) & mask;
+      size_t mask = (1<<ma_numalign)-1;
+      int diff = ((size_t) B_client_space) & mask;
       
       /* Check that the difference is a multiple of the type size.
        * If so, then we can shift the client space which is already
@@ -701,11 +702,11 @@ private void balloc_after(ar, address, client_space, nbytes)
      *        - address
      */
 
-    L_gap2 = ((long)B_address
-        - (long)B_client_space
-        - (long)L_client_space
-        - (long)sizeof(Guard))
-        % (long)ALIGNMENT;
+    L_gap2 = ((size_t)B_address
+        - (size_t)B_client_space
+        - (size_t)L_client_space
+        - (size_t)sizeof(Guard))
+        % (size_t)ALIGNMENT;
 
     if (L_gap2 < 0)
         L_gap2 += ALIGNMENT;
@@ -784,8 +785,8 @@ private void balloc_before(ar, address, client_space, nbytes)
      */
 
     if (ma_numalign > 0) {
-      unsigned long mask = (1<<ma_numalign)-1;
-      int diff = ((unsigned long) B_client_space) & mask;
+      size_t mask = (1<<ma_numalign)-1;
+      int diff = ((size_t) B_client_space) & mask;
       
       /* Check that the difference is a multiple of the type size.
        * If so, then we can shift the client space which is already
@@ -970,9 +971,9 @@ private void debug_ad_print(ad)
 #define NUMADFIELDS 7
 
     char    *fn[NUMADFIELDS];    /* field names */
-    long    fa[NUMADFIELDS];    /* field addresses */
+    size_t    fa[NUMADFIELDS];    /* field addresses */
     int        i;            /* loop index */
-    long    address;        /* other addresses */
+    size_t    address;        /* other addresses */
 
     /* set field names */
     fn[0] = "datatype";
@@ -984,13 +985,13 @@ private void debug_ad_print(ad)
     fn[6] = "checksum";
 
     /* set field addresses */
-    fa[0] = (long)(&(ad->datatype));
-    fa[1] = (long)(&(ad->nelem));
-    fa[2] = (long)(&(ad->name));
-    fa[3] = (long)(&(ad->client_space));
-    fa[4] = (long)(&(ad->nbytes));
-    fa[5] = (long)(&(ad->next));
-    fa[6] = (long)(&(ad->checksum));
+    fa[0] = (size_t)(&(ad->datatype));
+    fa[1] = (size_t)(&(ad->nelem));
+    fa[2] = (size_t)(&(ad->name));
+    fa[3] = (size_t)(&(ad->client_space));
+    fa[4] = (size_t)(&(ad->nbytes));
+    fa[5] = (size_t)(&(ad->next));
+    fa[6] = (size_t)(&(ad->checksum));
 
     /* print AD fields to stderr */
     (void)fprintf(stderr, "debug_ad_print:\n");
@@ -1003,19 +1004,19 @@ private void debug_ad_print(ad)
             fn[i]);
 
     /* print other addresses to stderr */
-    address = (long)guard1(ad);
+    address = (size_t)guard1(ad);
     (void)fprintf(stderr, "\t0x%lx  mod4,8,16=%d,%d,%-2d  guard1\n",
         address,
         address % 4,
         address % 8,
         address % 16);
-    address = (long)ad->client_space;
+    address = (size_t)ad->client_space;
     (void)fprintf(stderr, "\t0x%lx  mod4,8,16=%d,%d,%-2d  client_space\n",
         address,
         address % 4,
         address % 8,
         address % 16);
-    address = (long)guard2(ad);
+    address = (size_t)guard2(ad);
     (void)fprintf(stderr, "\t0x%lx  mod4,8,16=%d,%d,%-2d  guard2\n",
         address,
         address % 4,
@@ -1328,11 +1329,11 @@ private int list_print(list, block_type, index_base)
         (void)printf("\ttype of elements:\t\t%s\n",
             ma_datatype[ad->datatype]);
         (void)printf("\tnumber of elements:\t\t%ld\n",
-            (long)ad->nelem);
+            (size_t)ad->nelem);
         (void)printf("\taddress of client space:\t0x%lx\n",
-            (long)ad->client_space);
+            (size_t)ad->client_space);
         (void)printf("\tindex for client space:\t\t%ld\n",
-            (long)(client_space_index(ad) + index_base));
+            (size_t)(client_space_index(ad) + index_base));
         (void)printf("\ttotal number of bytes:\t\t%lu\n",
             ad->nbytes);
     }
@@ -1641,7 +1642,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
     {
         (void)sprintf(ma_ebuf,
             "invalid block address (0x%lx) for memhandle %ld",
-            (long)ad, (long)memhandle);
+            (size_t)ad, (size_t)memhandle);
         ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
         return MA_FALSE;
     }
@@ -1652,7 +1653,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "invalid checksum for memhandle %ld (name: '%s')",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1664,7 +1665,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "invalid guard(s) for memhandle %ld (name: '%s')",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1676,7 +1677,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "memhandle %ld (name: '%s') not in heap",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1687,7 +1688,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "memhandle %ld (name: '%s') not in stack",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1699,7 +1700,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "memhandle %ld (name: '%s') not in stack",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1709,7 +1710,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "memhandle %ld (name: '%s') not top of stack",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1720,7 +1721,7 @@ private Boolean mh2ad(memhandle, adout, location, caller)
         {
             (void)sprintf(ma_ebuf,
                 "memhandle %ld (name: '%s') not in heap or stack",
-                (long)memhandle, ad->name);
+                (size_t)memhandle, ad->name);
             ma_error(EL_Nonfatal, ET_External, caller, ma_ebuf);
             return MA_FALSE;
         }
@@ -1747,7 +1748,7 @@ private void mh_free(ad)
     {
         (void)sprintf(ma_ebuf,
             "cannot find memhandle for block address 0x%lx",
-            (long)ad);
+            (size_t)ad);
         ma_error(EL_Nonfatal, ET_Internal, "mh_free", ma_ebuf);
     }
     else
@@ -1761,14 +1762,14 @@ private void mh_free(ad)
  */
 /* ------------------------------------------------------------------------- */
 
-private long mai_round(value, unit)
-    long    value;        /* to round */
+private size_t mai_round(value, unit)
+    size_t    value;        /* to round */
     ulongi    unit;        /* to round to */
 {
     /* voodoo ... */
     unit--;
     value += unit;
-    value &= ~(long)unit;
+    value &= ~(size_t)unit;
     return value;
 }
 
@@ -1825,7 +1826,7 @@ public Boolean MAi_inform_base(datatype, address1, address2)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Nonfatal, ET_Internal, "MAi_inform_base", ma_ebuf);
         return MA_FALSE;
     }
@@ -1982,7 +1983,7 @@ public Boolean MA_allocate_heap(
     {
         (void)sprintf(ma_ebuf,
             "block '%s', invalid datatype: %ld",
-            name, (long)datatype);
+            name, (size_t)datatype);
         ma_error(EL_Nonfatal, ET_External, "MA_allocate_heap", ma_ebuf);
         return MA_FALSE;
     }
@@ -1992,7 +1993,7 @@ public Boolean MA_allocate_heap(
     {
         (void)sprintf(ma_ebuf,
             "block '%s', invalid nelem: %ld",
-            name, (long)nelem);
+            name, (size_t)nelem);
         ma_error(EL_Nonfatal, ET_External, "MA_allocate_heap", ma_ebuf);
         return MA_FALSE;
     }
@@ -2156,7 +2157,7 @@ public Boolean MA_free_heap(Integer memhandle) /* the block to deallocate */
     {
         (void)sprintf(ma_ebuf,
             "memhandle %ld (name: '%s') not on heap used list",
-            (long)memhandle, ad->name);
+            (size_t)memhandle, ad->name);
         ma_error(EL_Nonfatal, ET_Internal, "MA_free_heap", ma_ebuf);
         return MA_FALSE;
     }
@@ -2216,7 +2217,7 @@ public Boolean MA_free_heap_piece(
     {
         (void)sprintf(ma_ebuf,
             "block '%s', invalid nelem: %ld",
-            ad->name, (long)nelem);
+            ad->name, (size_t)nelem);
         ma_error(EL_Nonfatal, ET_External, "MA_free_heap_piece", ma_ebuf);
         return MA_FALSE;
     }
@@ -2228,7 +2229,7 @@ public Boolean MA_free_heap_piece(
 
     if (ma_trace) 
     (void)printf("MA: freeing %ld elements of '%s'\n",
-            (long)nelem, ad->name);
+            (size_t)nelem, ad->name);
 
     /* set AR for data to keep */
     ar.datatype = ad->datatype;
@@ -2327,7 +2328,7 @@ public Pointer MA_get_mbase(Integer datatype)    /* to get base address of */
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_get_mbase", ma_ebuf);
         return NULL;
     }
@@ -2472,7 +2473,7 @@ public Boolean MA_init(
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Nonfatal, ET_External, "MA_init", ma_ebuf);
         return MA_FALSE;
     }
@@ -2490,7 +2491,7 @@ public Boolean MA_init(
         heap_bytes = (nominal_heap * ma_sizeof[datatype]) +
             (DEFAULT_REQUESTS_HEAP * max_block_overhead(datatype));
     }
-    heap_bytes = (unsigned long)mai_round((long)heap_bytes, (ulongi)ALIGNMENT);
+    heap_bytes = (size_t)mai_round((size_t)heap_bytes, (ulongi)ALIGNMENT);
 
     /* compute # of bytes in stack */
     if (nominal_stack < 0)
@@ -2502,26 +2503,42 @@ public Boolean MA_init(
         stack_bytes = (nominal_stack * ma_sizeof[datatype]) +
             (DEFAULT_REQUESTS_STACK * max_block_overhead(datatype));
     }
-    stack_bytes = (unsigned long)mai_round((long)stack_bytes, (ulongi)ALIGNMENT);
+    stack_bytes = (size_t)mai_round((size_t)stack_bytes, (ulongi)ALIGNMENT);
 
     /* segment consists of heap and stack */
     total_bytes = heap_bytes + stack_bytes;
 #ifdef NOUSE_MMAP
-#ifdef HAVE_MALLOPT
+#if HAVE_MALLOPT
     /* disable memory mapped malloc */
     mallopt(M_MMAP_MAX, 0);
     mallopt(M_TRIM_THRESHOLD, -1);
 #endif
 #endif
     /* allocate the segment of memory */
-#ifdef ENABLE_ARMCI_MEM_OPTION
+#ifdef ENABLE_CUDA_MEM
+    if(getenv("MA_USE_CUDA_MEM"))
+    {
+        void * temp_ptr = NULL;
+        int cuda_error = 0;                  // cudaSuccess 0
+        unsigned int cuda_mem_flags = 0x01;  // cudaMemAttachGlobal 0x01
+        cuda_error = cudaMallocManaged(&temp_ptr, total_bytes, cuda_mem_flags);
+        if (cuda_error == 0) {
+          ma_segment = temp_ptr;
+        } else {
+          ma_segment = NULL;
+        }
+    }
+    else
+#elif defined(ENABLE_ARMCI_MEM_OPTION)
     if(getenv("MA_USE_ARMCI_MEM"))
     {
         ma_segment = (Pointer)ARMCI_Malloc_local(total_bytes);
     }
     else
 #endif
+    {
         ma_segment = (Pointer)bytealloc(total_bytes);
+    }
     if (ma_segment == (Pointer)NULL)
     {
         (void)sprintf(ma_ebuf,
@@ -2611,7 +2628,7 @@ public Boolean MA_init_memhandle_iterator( Integer *ithandle)
 
 public Integer MA_inquire_avail(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between heap and stack */
+    size_t    gap_length;    /* # of bytes between heap and stack */
     Integer    nelem_gap;    /* max elements containable in gap */
 
 #ifdef STATS
@@ -2637,7 +2654,7 @@ public Integer MA_inquire_avail(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_avail", ma_ebuf);
         return DONTCARE;
     }
@@ -2650,7 +2667,7 @@ public Integer MA_inquire_avail(Integer datatype)
      */
 
     /* try space between heap and stack */
-    gap_length = (long)(ma_sp - ma_hp);
+    gap_length = (size_t)(ma_sp - ma_hp);
     if (gap_length > 0)
         nelem_gap = ma_nelem(ma_hp, (ulongi)gap_length, datatype);
     else
@@ -2675,7 +2692,7 @@ public Integer MA_inquire_avail(Integer datatype)
 
 public Integer MA_inquire_heap(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between heap and partition */
+    size_t    gap_length;    /* # of bytes between heap and partition */
     Integer    nelem_gap;    /* max elements containable in gap */
     Integer    nelem_frag;    /* max elements containable in any frag */
 
@@ -2702,7 +2719,7 @@ public Integer MA_inquire_heap(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_heap", ma_ebuf);
         return DONTCARE;
     }
@@ -2715,8 +2732,9 @@ public Integer MA_inquire_heap(Integer datatype)
      */
 
     /* try space between heap and partition */
-    gap_length = (long)(ma_partition - ma_hp);
-    if (gap_length > 0)
+    gap_length = (size_t)(ma_partition - ma_hp);
+    /*    if (gap_length > 0)*/
+    if (ma_partition > ma_hp)
         nelem_gap = ma_nelem(ma_hp, (ulongi)gap_length, datatype);
     else
         nelem_gap = 0;
@@ -2746,7 +2764,7 @@ public Integer MA_inquire_heap(Integer datatype)
 
 public Integer MA_inquire_heap_check_stack(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between heap and partition */
+    size_t    gap_length;    /* # of bytes between heap and partition */
     Integer    nelem_gap;    /* max elements containable in gap */
     Integer    nelem_frag;    /* max elements containable in any frag */
 
@@ -2773,7 +2791,7 @@ public Integer MA_inquire_heap_check_stack(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_heap_check_stack", ma_ebuf);
         return DONTCARE;
     }
@@ -2786,7 +2804,7 @@ public Integer MA_inquire_heap_check_stack(Integer datatype)
      */
 
     /* try space between heap and partition or heap and stack */
-    gap_length = min((long)(ma_partition - ma_hp), (long)(ma_sp - ma_hp));
+    gap_length = min((size_t)(ma_partition - ma_hp), (size_t)(ma_sp - ma_hp));
     if (gap_length > 0)
         nelem_gap = ma_nelem(ma_hp, (ulongi)gap_length, datatype);
     else
@@ -2816,7 +2834,7 @@ public Integer MA_inquire_heap_check_stack(Integer datatype)
 
 public Integer MA_inquire_heap_no_partition(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between heap and partition */
+    size_t    gap_length;    /* # of bytes between heap and partition */
     Integer    nelem_gap;    /* max elements containable in gap */
     Integer    nelem_frag;    /* max elements containable in any frag */
 
@@ -2843,7 +2861,7 @@ public Integer MA_inquire_heap_no_partition(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_heap_no_partition", ma_ebuf);
         return DONTCARE;
     }
@@ -2856,7 +2874,8 @@ public Integer MA_inquire_heap_no_partition(Integer datatype)
      */
 
     /* try space between heap and stack */
-    gap_length = (long)(ma_sp - ma_hp);
+    gap_length = (size_t)(ma_sp - ma_hp);
+    /*if (ma_sp > ma_hp)*/
     if (gap_length > 0)
         nelem_gap = ma_nelem(ma_hp, (ulongi)gap_length, datatype);
     else
@@ -2884,7 +2903,7 @@ public Integer MA_inquire_heap_no_partition(Integer datatype)
 
 public Integer MA_inquire_stack(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between partition and stack */
+    size_t    gap_length;    /* # of bytes between partition and stack */
     Integer    nelem_gap;    /* max elements containable in gap */
 
 #ifdef STATS
@@ -2910,7 +2929,7 @@ public Integer MA_inquire_stack(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_stack", ma_ebuf);
         return DONTCARE;
     }
@@ -2923,7 +2942,8 @@ public Integer MA_inquire_stack(Integer datatype)
      */
 
     /* try space between partition and stack */
-    gap_length = (long)(ma_sp - ma_partition);
+    gap_length = (size_t)(ma_sp - ma_partition);
+    /*if (ma_sp > ma_partition)*/
     if (gap_length > 0)
         nelem_gap = ma_nelem(ma_partition, (ulongi)gap_length, datatype);
     else
@@ -2951,7 +2971,7 @@ public Integer MA_inquire_stack(Integer datatype)
 
 public Integer MA_inquire_stack_check_heap(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between partition and stack */
+    size_t    gap_length;    /* # of bytes between partition and stack */
     Integer    nelem_gap;    /* max elements containable in gap */
 
 #ifdef STATS
@@ -2977,7 +2997,7 @@ public Integer MA_inquire_stack_check_heap(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_stack_check_heap", ma_ebuf);
         return DONTCARE;
     }
@@ -2990,7 +3010,7 @@ public Integer MA_inquire_stack_check_heap(Integer datatype)
      */
 
     /* try space between partition and stack or heap and stack */
-    gap_length = min((long)(ma_sp - ma_partition), (long)(ma_sp - ma_hp));
+    gap_length = min((size_t)(ma_sp - ma_partition), (size_t)(ma_sp - ma_hp));
     if (gap_length > 0)
         nelem_gap = ma_nelem(ma_partition, (ulongi)gap_length, datatype);
     else
@@ -3020,7 +3040,7 @@ public Integer MA_inquire_stack_check_heap(Integer datatype)
 
 public Integer MA_inquire_stack_no_partition(Integer datatype)
 {
-    long    gap_length;    /* # of bytes between heap and partition */
+    size_t    gap_length;    /* # of bytes between heap and partition */
     Integer    nelem_gap;    /* max elements containable in gap */
 
 #ifdef STATS
@@ -3046,7 +3066,7 @@ public Integer MA_inquire_stack_no_partition(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_inquire_stack_no_partition", ma_ebuf);
         return DONTCARE;
     }
@@ -3059,7 +3079,8 @@ public Integer MA_inquire_stack_no_partition(Integer datatype)
      */
 
     /* try space between heap and stack */
-    gap_length = (long)(ma_sp - ma_hp);
+    gap_length = (size_t)(ma_sp - ma_hp);
+    /*if (ma_sp > ma_hp)*/
     if (gap_length > 0)
         nelem_gap = ma_nelem(ma_hp, (ulongi)gap_length, datatype);
     else
@@ -3103,7 +3124,7 @@ public Boolean MA_pop_stack(Integer memhandle) /* the block to deallocate */
     {
         (void)sprintf(ma_ebuf,
             "memhandle %ld (name: '%s') not on stack used list",
-            (long)memhandle, ad->name);
+            (size_t)memhandle, ad->name);
         ma_error(EL_Nonfatal, ET_Internal, "MA_pop_stack", ma_ebuf);
         return MA_FALSE;
     }
@@ -3257,7 +3278,7 @@ public Boolean MA_push_stack(
     {
         (void)sprintf(ma_ebuf,
             "block '%s', invalid datatype: %ld",
-            name, (long)datatype);
+            name, (size_t)datatype);
         ma_error(EL_Nonfatal, ET_External, "MA_push_stack", ma_ebuf);
         return MA_FALSE;
     }
@@ -3267,7 +3288,7 @@ public Boolean MA_push_stack(
     {
         (void)sprintf(ma_ebuf,
             "block '%s', invalid nelem: %ld",
-            name, (long)nelem);
+            name, (size_t)nelem);
         ma_error(EL_Nonfatal, ET_External, "MA_push_stack", ma_ebuf);
         return MA_FALSE;
     }
@@ -3413,7 +3434,7 @@ public Boolean MA_set_numalign(Integer  value)
     {
         (void)sprintf(ma_ebuf,
             "invalid alignment: %ld",
-            (long)value);
+            (size_t)value);
         ma_error(EL_Nonfatal, ET_External, "MA_set_numalign", ma_ebuf);
         return MA_FALSE;
     }
@@ -3453,7 +3474,7 @@ public Integer MA_sizeof(
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype1);
+            (size_t)datatype1);
         ma_error(EL_Fatal, ET_External, "MA_sizeof", ma_ebuf);
         return DONTCARE;
     }
@@ -3463,7 +3484,7 @@ public Integer MA_sizeof(
     {
         (void)sprintf(ma_ebuf,
             "invalid nelem: %ld",
-            (long)nelem1);
+            (size_t)nelem1);
         ma_error(EL_Fatal, ET_External, "MA_sizeof", ma_ebuf);
         return DONTCARE;
     }
@@ -3473,7 +3494,7 @@ public Integer MA_sizeof(
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype2);
+            (size_t)datatype2);
         ma_error(EL_Fatal, ET_External, "MA_sizeof", ma_ebuf);
         return DONTCARE;
     }
@@ -3522,7 +3543,7 @@ public Integer MA_sizeof_overhead(Integer datatype)
     {
         (void)sprintf(ma_ebuf,
             "invalid datatype: %ld",
-            (long)datatype);
+            (size_t)datatype);
         ma_error(EL_Fatal, ET_External, "MA_sizeof_overhead", ma_ebuf);
         return DONTCARE;
     }

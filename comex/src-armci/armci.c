@@ -91,6 +91,7 @@ void armci_init_domains(MPI_Comm comm)
       nodelist[i] = _my_node_id*_number_of_procs_per_node+i;
     comex_group_create(_number_of_procs_per_node, nodelist,
         COMEX_GROUP_WORLD, &ARMCI_Node_group);
+    free(nodelist);
   }
 }
 
@@ -225,7 +226,7 @@ int PARMCI_AccS(int optype, void *scale, void *src_ptr, int *src_stride_arr, voi
 {
   int iret;
   /* check if data is contiguous */
-  if (armci_checkt_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
+  if (armci_check_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
     int i;
     int lcount = 1;
     for (i=0; i<=stride_levels; i++) lcount *= count[i];
@@ -308,6 +309,10 @@ int PARMCI_Free(void *ptr)
     return comex_free(ptr, ARMCI_Default_Proc_Group);
 }
 
+int PARMCI_Free_memdev(void *ptr)
+{
+    return comex_free_dev(ptr, ARMCI_Default_Proc_Group);
+}
 
 int ARMCI_Free_group(void *ptr, ARMCI_Group *group)
 {
@@ -331,7 +336,7 @@ int PARMCI_GetS(void *src_ptr, int *src_stride_arr, void *dst_ptr, int *dst_stri
 {
   int iret;
   /* check if data is contiguous */
-  if (armci_checkt_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
+  if (armci_check_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
     int i;
     int lcount = 1;
     for (i=0; i<=stride_levels; i++) lcount *= count[i];
@@ -419,6 +424,22 @@ int PARMCI_Init_args(int *argc, char ***argv)
 }
 
 
+int PARMCI_Init_mpi_comm(MPI_Comm comm)
+{
+    int ret = comex_init_comm(comm);
+    if (ret == COMEX_SUCCESS) {
+      int rc = comex_group_comm(COMEX_GROUP_WORLD, &ARMCI_COMM_WORLD);
+      assert(COMEX_SUCCESS == rc);
+      ARMCI_Default_Proc_Group = 0;
+      armci_init_domains(ARMCI_COMM_WORLD);
+      ret = 1;
+    } else {
+      ret = 0;
+    }
+    return ret;
+}
+
+
 int PARMCI_Initialized()
 {
     return comex_initialized();
@@ -436,10 +457,21 @@ int PARMCI_Malloc(void **ptr_arr, armci_size_t bytes)
     return comex_malloc(ptr_arr, bytes, ARMCI_Default_Proc_Group);
 }
 
+int PARMCI_Malloc_memdev(void **ptr_arr, armci_size_t bytes, const char *device)
+{
+    return comex_malloc_mem_dev(ptr_arr, bytes, ARMCI_Default_Proc_Group,device);
+}
+
 
 int ARMCI_Malloc_group(void **ptr_arr, armci_size_t bytes, ARMCI_Group *group)
 {
     return comex_malloc(ptr_arr, bytes, *group);
+}
+
+int ARMCI_Malloc_group_memdev(void **ptr_arr, armci_size_t bytes,
+    ARMCI_Group *group, const char *device)
+{
+    return comex_malloc_mem_dev(ptr_arr, bytes, *group,device);
 }
 
 
@@ -522,7 +554,7 @@ int PARMCI_NbAccS(int optype, void *scale, void *src_ptr, int *src_stride_arr, v
 {
   int iret;
   /* check if data is contiguous */
-  if (armci_checkt_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
+  if (armci_check_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
     int i;
     int lcount = 1;
     for (i=0; i<=stride_levels; i++) lcount *= count[i];
@@ -557,7 +589,7 @@ int PARMCI_NbGetS(void *src_ptr, int *src_stride_arr, void *dst_ptr, int *dst_st
 {
   int iret;
   /* check if data is contiguous */
-  if (armci_checkt_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
+  if (armci_check_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
     int i;
     int lcount = 1;
     for (i=0; i<=stride_levels; i++) lcount *= count[i];
@@ -592,7 +624,7 @@ int PARMCI_NbPutS(void *src_ptr, int *src_stride_arr, void *dst_ptr, int *dst_st
 {
   int iret;
   /* check if data is contiguous */
-  if (armci_checkt_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
+  if (armci_check_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
     int i;
     int lcount = 1;
     for (i=0; i<=stride_levels; i++) lcount *= count[i];
@@ -651,7 +683,7 @@ int PARMCI_PutS(void *src_ptr, int *src_stride_arr, void *dst_ptr, int *dst_stri
 {
   int iret;
   /* check if data is contiguous */
-  if (armci_checkt_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
+  if (armci_check_contiguous(src_stride_arr, dst_stride_arr, count, stride_levels)) {
     int i;
     int lcount = 1;
     for (i=0; i<=stride_levels; i++) lcount *= count[i];

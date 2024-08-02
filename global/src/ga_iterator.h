@@ -13,6 +13,7 @@ typedef struct {
   Integer *map;
   Integer *proclist;
   int     *proclistperm;
+  Integer *mapc;
   Integer nproc;
   Integer offset;
   Integer iproc;
@@ -116,7 +117,6 @@ typedef struct {
 #define gam_setstride(ndim, size, ld, ldrem, stride_rem, stride_loc){\
   int _i;                                                            \
   stride_rem[0]= stride_loc[0] = (int)size;                          \
-  __CRAYX1_PRAGMA("_CRI novector");                                  \
   for(_i=0;_i<ndim-1;_i++){                                          \
     stride_rem[_i] *= (int)ldrem[_i];                                \
     stride_loc[_i] *= (int)ld[_i];                                   \
