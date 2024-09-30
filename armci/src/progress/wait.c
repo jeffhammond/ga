@@ -16,6 +16,7 @@ int PARMCI_Wait(armci_hdl_t* usr_hdl)
 
     if(nb_handle) {
         if(nb_handle->agg_flag) {
+            printf("PARMCI_Wait: nb_handle->agg_flag=%d\n", nb_handle->agg_flag);
             armci_agg_complete(nb_handle, UNSET);
             return (success);
         }

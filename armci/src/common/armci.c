@@ -545,11 +545,13 @@ unsigned int _armci_get_next_tag(){
 }
 
 void ARMCI_SET_AGGREGATE_HANDLE(armci_hdl_t* nb_handle) { 
+      printf("ARMCI_SET_AGGREGATE_HANDLE\n");
       ((armci_ihdl_t)(nb_handle))->agg_flag = 1;
       ((armci_ihdl_t)(nb_handle))->proc = -1;
 }
  
 void ARMCI_UNSET_AGGREGATE_HANDLE(armci_hdl_t* nb_handle) {
+      printf("ARMCI_UNSET_AGGREGATE_HANDLE\n");
       ((armci_ihdl_t)(nb_handle))->agg_flag = 0;
       ((armci_ihdl_t)(nb_handle))->proc = -1;
 }

@@ -540,6 +540,7 @@ static int _armci_puts(void *src_ptr,
   else {/* aggregate put */
     if(nbh->agg_flag == SET) {
       if(!direct){ 
+        printf("_armci_puts: nbh->agg_flag == SET, !direct\n");
 	rc= armci_agg_save_strided_descriptor(src_ptr, src_stride_arr, 
 					      dst_ptr, dst_stride_arr, 
 					      count, stride_levels, proc, 
@@ -1097,6 +1098,7 @@ int PARMCI_NbGetS( void *src_ptr,  	/* pointer to 1st segment at source*/
   /* aggregate get */
   if(nb_handle && nb_handle->agg_flag == SET) {
     if(!direct){ 
+      printf("PARMCI_NbGetS: nb_handle && nbh->agg_flag == SET, !direct\n");
       rc= armci_agg_save_strided_descriptor(src_ptr, src_stride_arr,
 					    dst_ptr, dst_stride_arr, 
 					    count, stride_levels, proc, 
@@ -1216,6 +1218,7 @@ static void _armci_op_value(int op, void *src, void *dst, int proc,
     ORDER(op,proc); /* ensure ordering */
   }else {
     if(nbh->agg_flag == SET) {
+      printf("_armci_op_value: nbh->agg_flag == SET\n");
       if(op==PUT) pv = 1;
       (void)armci_agg_save_descriptor(src,dst,bytes,proc,op,pv,nbh);
       return;

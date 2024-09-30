@@ -482,6 +482,7 @@ int PARMCI_NbPutV( armci_giov_t darr[], /* descriptor array */
     /* aggregate put */
     if(nb_handle && nb_handle->agg_flag == SET) {
        if(!direct) {
+          printf("PARMCI_NbPutV: nb_handle && nb_handle->agg_flag == SET, !direct\n");
 	  rc=armci_agg_save_giov_descriptor(darr, len, proc, PUT, nb_handle);
 	  return rc;
        }
@@ -550,6 +551,7 @@ int PARMCI_NbGetV( armci_giov_t darr[], /* descriptor array */
     /* aggregate get */
     if(nb_handle && nb_handle->agg_flag == SET) {
        if(!direct) {
+          printf("PARMCI_NbGetV: nb_handle && nb_handle->agg_flag == SET, !direct\n");
 	  rc=armci_agg_save_giov_descriptor(darr, len, proc, GET, nb_handle);
 	  return rc;
        }
